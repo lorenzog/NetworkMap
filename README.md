@@ -23,6 +23,8 @@ Design blurb
  1. Write a python parsing tool able to digest windows route dumps, linux route dumps, etc.
     * Must be able to recognise dupes, specify nearest-neighbours
     * CIDRize to parse IPs? https://pypi.python.org/pypi/cidrize/
+    * *persistence!* the tool should use an existing database (SQLite?) for
+      storage, with options to recreate
  2. Use a graph library to set up the data structure. Candidates:
     * igraph http://igraph.org/python/
     * networkX https://networkx.readthedocs.io/en/stable/index.html
