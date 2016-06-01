@@ -16,6 +16,10 @@ Example:
  * Ultimately, this tool produces a network diagram showing all hosts reachable
    from A and B. Ideally with pretty icons
 
+Possible alternatives
+---------------------
+
+P2NMAP (it's a book, comes with source code): https://python-forensics.org/p2nmap/
 
 Design blurb
 ------------
@@ -29,6 +33,8 @@ Design blurb
     * igraph http://igraph.org/python/
     * networkX https://networkx.readthedocs.io/en/stable/index.html
     * graphviz (pydot or python's graphviz module): http://graphviz.readthedocs.io/en/latest/
+    * graph-tool: https://graph-tool.skewed.de/
+    * pygraphviz (seems related to networkX - no clean install?)
  3. Dump into SVG
  4. ...
  5. Profit!
