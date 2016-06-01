@@ -1,0 +1,40 @@
+
+Windows IP Configuration
+
+   Host Name . . . . . . . . . . . . : lorenzos-vm-PC
+   Primary Dns Suffix  . . . . . . . : 
+   Node Type . . . . . . . . . . . . : Hybrid
+   IP Routing Enabled. . . . . . . . : No
+   WINS Proxy Enabled. . . . . . . . : No
+
+Ethernet adapter Local Area Connection 2:
+
+   Connection-specific DNS Suffix  . : 
+   Description . . . . . . . . . . . : Xen PV Network Device #0
+   Physical Address. . . . . . . . . : 00-16-3E-5E-6C-0E
+   DHCP Enabled. . . . . . . . . . . : Yes
+   Autoconfiguration Enabled . . . . : Yes
+   Link-local IPv6 Address . . . . . : fe80::c4b6:22d8:dea7:5028%17(Preferred) 
+   IPv4 Address. . . . . . . . . . . : 10.137.2.16(Preferred) 
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 10.137.2.1
+   DNS Servers . . . . . . . . . . . : 10.137.2.1
+   NetBIOS over Tcpip. . . . . . . . : Enabled
+
+Tunnel adapter Local Area Connection* 9:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . : 
+   Description . . . . . . . . . . . : Teredo Tunneling Pseudo-Interface
+   Physical Address. . . . . . . . . : 00-00-00-00-00-00-00-E0
+   DHCP Enabled. . . . . . . . . . . : No
+   Autoconfiguration Enabled . . . . : Yes
+
+Tunnel adapter isatap.{E405A5B4-FE74-4B7A-B7FA-5229B9F59C68}:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . : 
+   Description . . . . . . . . . . . : Microsoft ISATAP Adapter #4
+   Physical Address. . . . . . . . . : 00-00-00-00-00-00-00-E0
+   DHCP Enabled. . . . . . . . . . . : No
+   Autoconfiguration Enabled . . . . : Yes

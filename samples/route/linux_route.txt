@@ -1,0 +1,5 @@
+    $ sudo route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         10.137.4.1      0.0.0.0         UG    0      0        0 eth0
+10.137.4.1      0.0.0.0         255.255.255.255 UH    0      0        0 eth0
