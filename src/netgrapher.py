@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 """
-POC of python parser
-====================
+POC of a network grapher
+========================
 
 """
 
@@ -15,39 +15,44 @@ logger.addHandler(logging.StreamHandler())
 
 DEFAULT_SAVEFILE = "networkmap.xml.gz"
 SUPPORTED_DUMPFILES = [
-    'route',
     'arp',
+    'route',
+    'traceroute',
 ]
 
 
-def load_graph(savefile):
-    # return graph
-    pass
+def grow_graph(current_graph, dumpfile, dumpfile_type):
+    """Given a bunch of nodes, if they are not dupes add to graph"""
 
-
-def load_dump(dumpfile, dumpfile_type):
     # TODO
     # guess the dumpfile based on structure, or use type if provided
     # extract nodes by IP
-    #
-    # NOTES: we need to find where is this dump taken from
-    # e.g. what is the 'center' or the current host (IP)
-    # This will be useful when adding nodes to a graph, since two subnets might be adjacent
-    # and have the same network address but be divided by a router with a different IP
-    # ..or something like that.
-    #
-    # At the moment the imported_data structure could be a dictionary
+
+    # TODO find the ip of the current node, or 'centre' of this view
+    # Maybe a dictionary like this?
     # { 'current_ip': [
     #       list of nodes, ...
     #   ]
     # }
-    # return imported_data
+    # then make a new graph object
+
+    # NOTE:
+    # 1. arp tables give immediate neighbours so can add an edge.
+    # 2. routes can give hosts that are not immediately adjacent. In this case,
+    # they should not be added as direct edges when growing the graph.
+    # 3. traceroutes show paths (i.e. direct edges)
+
+    # TODO
+    # then grow the existing graph (if any in the file) with the latest 'view'
+    # from the dumpfile
+
     pass
 
 
-def grow_graph(graph, imported_data):
-    """Given a bunch of nodes, if they are not dupes add to graph"""
-    # TODO
+# see: http://stackoverflow.com/a/37578709/204634
+def load_graph(savefile):
+    """Does what it says on the tin(c)"""
+    # return graph
     pass
 
 
@@ -100,8 +105,7 @@ def main():
         raise SystemError("File {} does not exist".format(args.dumpfile))
 
     graph = load_graph(savefile)
-    imported_data = load_dump(args.dumpfile, args.dumpfile_type)
-    grow_graph(graph, imported_data)
+    grow_graph(graph, args.dumpfile, args.dumpfile_type)
     save_graph(graph, savefile, args.force)
 
     exit(0)
