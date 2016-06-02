@@ -3,11 +3,14 @@
 POC of a network grapher
 ========================
 
+Does stuff.
+
 """
 
 import argparse
 import logging
 import os
+import re
 
 
 logger = logging.getLogger(__name__)
@@ -21,11 +24,76 @@ SUPPORTED_DUMPFILES = [
 ]
 
 
-def grow_graph(current_graph, dumpfile, dumpfile_type):
+class MyException(Exception):
+    """Generic exception to handle program flow exits"""
+    pass
+
+
+# NOTE: maybe instead of passing the graph around, it makes more sense to
+# generate a new graph from each file, then pass that to a 'merging graph' routine that
+# can find dupes, augment graph with new edges, etc. etc?
+
+
+def augment_from_arp(current_graph, dumpfile):
+    """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
+    # TODO determine windows/linux/version
+    # read line by line
+    with open(dumpfile) as f:
+        for line in f.readlines():
+            ###
+            # windows ARP file parsing
+            #
+            # is it a windows arp file? if so, this line is the first line e.g.
+            # Interface: 10.137.2.16 --- 0x11
+            m = re.match(r'Interface: (.+) ---', line)
+            if m and len(m.groups()) >= 1:
+                _local_ip = m.group(1)
+                logger.debug("Found centre node: {}".format(_local_ip))
+                # TODO find local IP in graph as centre node, add if non existing
+                continue
+
+            # lines with IPs and MAC addresses
+            # match an IP: ([\w.]+)
+            # match a mac: (([0-9a-f]{2}-){5}[0-9a-f])
+            m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f])', line)
+            if m and len(m.groups()) >= 2:
+                _node_ip = m.group(1)
+                _node_mac = m.group(2)
+                logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
+                # TODO add nodes to graph, direct edge with centre node
+                continue
+            #
+            ####
+
+
+def augment_from_route(current_graph, dumpfile):
+    pass
+
+
+def augment_from_tr(current_graph, dumpfile):
+    pass
+
+
+def grow_graph(current_graph, dumpfile, dumpfile_type=None):
     """Given a bunch of nodes, if they are not dupes add to graph"""
 
-    # TODO
-    # guess the dumpfile based on structure, or use type if provided
+    # TODO guess the dumpfile based on structure
+    # if dumpfile_type is None:
+    #     dumpfile_type = guess_dumpfile(dumpfile)
+    # ...or use type if provided
+    if dumpfile_type not in SUPPORTED_DUMPFILES:
+        raise MyException("Invalid dumpfile")
+
+    elif dumpfile_type == 'arp':
+        augment_from_arp(current_graph, dumpfile)
+    elif dumpfile_type == 'route':
+        augment_from_route(current_graph, dumpfile)
+    elif dumpfile_type == 'traceroute':
+        augment_from_tr(current_graph, dumpfile)
+    else:
+        # this bubbles to the user for now
+        raise NotImplementedError("Sorry, haven't written that function yet")
+
     # extract nodes by IP
 
     # TODO find the ip of the current node, or 'centre' of this view
@@ -105,8 +173,12 @@ def main():
         raise SystemError("File {} does not exist".format(args.dumpfile))
 
     graph = load_graph(savefile)
-    grow_graph(graph, args.dumpfile, args.dumpfile_type)
-    save_graph(graph, savefile, args.force)
+    try:
+        grow_graph(graph, args.dumpfile, args.dumpfile_type)
+        save_graph(graph, savefile, args.force)
+    except MyException as e:
+        logger.error("Something went wrong: {}".format(e))
+        raise SystemError
 
     exit(0)
 
