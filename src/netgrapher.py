@@ -22,6 +22,9 @@ SUPPORTED_DUMPFILES = [
     'route',
     'traceroute',
 ]
+SUPPORTED_OS = [
+    'windows'
+]
 
 
 class MyException(Exception):
@@ -33,63 +36,79 @@ class MyException(Exception):
 # generate a new graph from each file, then pass that to a 'merging graph' routine that
 # can find dupes, augment graph with new edges, etc. etc?
 
+# NOTE: what about 'ghost' IPs or multicast/broadcast?
 
-def augment_from_arp(current_graph, dumpfile):
+
+def parse_windows_arp(current_graph, f):
+    for line in f.readlines():
+        ###
+        # windows ARP file parsing
+        #
+        # is it a windows arp file? if so, this line is the first line e.g.
+        # Interface: 10.137.2.16 --- 0x11
+        m = re.match(r'Interface: (.+) ---', line)
+        if m and len(m.groups()) >= 1:
+            _local_ip = m.group(1)
+            logger.debug("Found centre node: {}".format(_local_ip))
+            # TODO find local IP in graph as centre node, add if non existing
+            continue
+
+        # lines with IPs and MAC addresses e.g.
+        #   10.137.2.1            fe-ff-ff-ff-ff-ff     dynamic
+        # match an IP: ([\w.]+)
+        # match a mac: (([0-9a-f]{2}-){5}[0-9a-f])
+        # start with two empty spaces
+        m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f])', line)
+        if m and len(m.groups()) >= 2:
+            _node_ip = m.group(1)
+            _node_mac = m.group(2)
+            logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
+            # TODO add nodes to graph, direct edge with centre node
+            continue
+        #
+        ####
+
+
+def augment_from_arp(current_graph, dumpfile, dumpfile_os):
     """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
-    # TODO determine windows/linux/version
-    # read line by line
     with open(dumpfile) as f:
-        for line in f.readlines():
-            ###
-            # windows ARP file parsing
-            #
-            # is it a windows arp file? if so, this line is the first line e.g.
-            # Interface: 10.137.2.16 --- 0x11
-            m = re.match(r'Interface: (.+) ---', line)
-            if m and len(m.groups()) >= 1:
-                _local_ip = m.group(1)
-                logger.debug("Found centre node: {}".format(_local_ip))
-                # TODO find local IP in graph as centre node, add if non existing
-                continue
-
-            # lines with IPs and MAC addresses
-            # match an IP: ([\w.]+)
-            # match a mac: (([0-9a-f]{2}-){5}[0-9a-f])
-            m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f])', line)
-            if m and len(m.groups()) >= 2:
-                _node_ip = m.group(1)
-                _node_mac = m.group(2)
-                logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
-                # TODO add nodes to graph, direct edge with centre node
-                continue
-            #
-            ####
+        if dumpfile_os == 'windows':
+            parse_windows_arp(current_graph, f)
 
 
-def augment_from_route(current_graph, dumpfile):
+def augment_from_route(current_graph, dumpfile, dumpfile_os):
     pass
 
 
-def augment_from_tr(current_graph, dumpfile):
+def augment_from_tr(current_graph, dumpfile, dumpfile_os):
     pass
 
 
-def grow_graph(current_graph, dumpfile, dumpfile_type=None):
+def guess_dumpfile_os(f):
+    # TODO read the first few lines of the file and guess the OS
+    # FIXME for now, let's try with just one
+    return 'windows'
+
+
+def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None):
     """Given a bunch of nodes, if they are not dupes add to graph"""
 
-    # TODO guess the dumpfile based on structure
+    # TODO guess the dumpfile os and type based on structure
     # if dumpfile_type is None:
-    #     dumpfile_type = guess_dumpfile(dumpfile)
-    # ...or use type if provided
+    #     dumpfile_type = guess_dumpfile_type(dumpfile)
+    if dumpfile_os is None:
+        dumpfile_os = guess_dumpfile_os(dumpfile)
     if dumpfile_type not in SUPPORTED_DUMPFILES:
         raise MyException("Invalid dumpfile")
+    if dumpfile_os not in SUPPORTED_OS:
+        raise MyException("Invalid OS")
 
-    elif dumpfile_type == 'arp':
-        augment_from_arp(current_graph, dumpfile)
+    if dumpfile_type == 'arp':
+        augment_from_arp(current_graph, dumpfile, dumpfile_os)
     elif dumpfile_type == 'route':
-        augment_from_route(current_graph, dumpfile)
+        augment_from_route(current_graph, dumpfile, dumpfile_os)
     elif dumpfile_type == 'traceroute':
-        augment_from_tr(current_graph, dumpfile)
+        augment_from_tr(current_graph, dumpfile, dumpfile_os)
     else:
         # this bubbles to the user for now
         raise NotImplementedError("Sorry, haven't written that function yet")
@@ -151,6 +170,11 @@ def main():
         help="Dumpfile type; default: tries to guess based on file format.",
         choices=SUPPORTED_DUMPFILES
     )
+    p.add_argument(
+        '-o', '--dumpfile-os',
+        help="Operating System; default: tries to guess.",
+        choices=SUPPORTED_OS
+    )
 
     args = p.parse_args()
 
@@ -174,7 +198,11 @@ def main():
 
     graph = load_graph(savefile)
     try:
-        grow_graph(graph, args.dumpfile, args.dumpfile_type)
+        grow_graph(
+            graph, args.dumpfile,
+            dumpfile_os=args.dumpfile_os,
+            dumpfile_type=args.dumpfile_type
+        )
         save_graph(graph, savefile, args.force)
     except MyException as e:
         logger.error("Something went wrong: {}".format(e))
