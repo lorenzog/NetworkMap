@@ -1,0 +1,5 @@
+$ sudo arp -n
+Address                  HWtype  HWaddress           Flags Mask            Iface
+10.137.1.8               ether   00:16:3e:5e:6c:06   C                     vif2.0
+192.168.1.1              ether   b0:48:7a:de:46:64   C                     wlp0s1
+
