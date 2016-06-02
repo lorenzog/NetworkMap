@@ -9,6 +9,7 @@ Does stuff.
 
 import argparse
 import logging
+import pprint
 import os
 import re
 
@@ -39,41 +40,58 @@ class MyException(Exception):
 # NOTE: what about 'ghost' IPs or multicast/broadcast?
 
 
-def parse_windows_arp(current_graph, f):
-    for line in f.readlines():
-        ###
-        # windows ARP file parsing
-        #
-        # is it a windows arp file? if so, this line is the first line e.g.
-        # Interface: 10.137.2.16 --- 0x11
-        m = re.match(r'Interface: (.+) ---', line)
-        if m and len(m.groups()) >= 1:
-            _local_ip = m.group(1)
-            logger.debug("Found centre node: {}".format(_local_ip))
-            # TODO find local IP in graph as centre node, add if non existing
-            continue
+class Node(object):
+    def __init__(self, ip=None, mac=None):
+        self.ip = ip
+        self.mac = mac
 
-        # lines with IPs and MAC addresses e.g.
-        #   10.137.2.1            fe-ff-ff-ff-ff-ff     dynamic
-        # match an IP: ([\w.]+)
-        # match a mac: (([0-9a-f]{2}-){5}[0-9a-f])
-        # start with two empty spaces
-        m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f])', line)
-        if m and len(m.groups()) >= 2:
-            _node_ip = m.group(1)
-            _node_mac = m.group(2)
-            logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
-            # TODO add nodes to graph, direct edge with centre node
-            continue
-        #
-        ####
+    def __repr__(self):
+        _ret = "Node IP: {}".format(self.ip)
+        if self.mac:
+            _ret += " [mac: {}]".format(self.mac)
+        return _ret
+
+
+def parse_windows_arp(dumpfile):
+    """Windows ARP file parsing"""
+    nodes = []
+    with open(dumpfile) as f:
+        for line in f.readlines():
+            # the first line looks like:
+            # Interface: 10.137.2.16 --- 0x11
+            m = re.match(r'Interface: (.+) ---', line)
+            if m and len(m.groups()) >= 1:
+                _local_ip = m.group(1)
+                logger.debug("Found centre node: {}".format(_local_ip))
+                continue
+
+            # lines with IPs and MAC addresses look like:
+            #   10.137.2.1            fe-ff-ff-ff-ff-ff     dynamic
+            # regexp to match an IP: ([\w.]+)
+            # regexp to match a mac: (([0-9a-f]{2}-){5}[0-9a-f])
+            # start with two empty spaces,
+            m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f])', line)
+            if m and len(m.groups()) >= 2:
+                _node_ip = m.group(1)
+                _node_mac = m.group(2)
+                logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
+                nodes.append(Node(_node_ip, _node_mac))
+                continue
+
+    # for now return a simple dict centre -> [nodes]
+    return {Node(_local_ip): nodes}
 
 
 def augment_from_arp(current_graph, dumpfile, dumpfile_os):
     """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
-    with open(dumpfile) as f:
-        if dumpfile_os == 'windows':
-            parse_windows_arp(current_graph, f)
+    if dumpfile_os == 'windows':
+        _local_net = parse_windows_arp(dumpfile)
+    else:
+        # TODO write parser for linux
+        raise NotImplementedError("Sorry dude")
+
+    logger.debug("Local network as seen from {}: \n{}".format(_local_net.keys(), pprint.pformat(_local_net.values())))
+    # TODO for each node in the local net, add to graph
 
 
 def augment_from_route(current_graph, dumpfile, dumpfile_os):
