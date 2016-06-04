@@ -52,7 +52,7 @@ class Node(object):
         return _ret
 
 
-def parse_windows_arp(dumpfile):
+def parse_windows_arp(dumpfile, ip):
     """Windows ARP file parsing"""
     nodes = []
     with open(dumpfile) as f:
@@ -63,6 +63,12 @@ def parse_windows_arp(dumpfile):
             if m and len(m.groups()) >= 1:
                 _local_ip = m.group(1)
                 logger.debug("Found centre node: {}".format(_local_ip))
+                if ip is not None and _local_ip != ip:
+                    raise MyException(
+                        "The IP found in the ARP file is {} but "
+                        "you supplied {}. Aborting...".format(
+                            _local_ip, ip)
+                    )
                 continue
 
             # lines with IPs and MAC addresses look like:
@@ -82,10 +88,10 @@ def parse_windows_arp(dumpfile):
     return {Node(_local_ip): nodes}
 
 
-def augment_from_arp(current_graph, dumpfile, dumpfile_os):
+def augment_from_arp(current_graph, dumpfile, dumpfile_os, ip):
     """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
     if dumpfile_os == 'windows':
-        _local_net = parse_windows_arp(dumpfile)
+        _local_net = parse_windows_arp(dumpfile, ip)
     else:
         # TODO write parser for linux
         raise NotImplementedError("Sorry dude")
@@ -94,12 +100,16 @@ def augment_from_arp(current_graph, dumpfile, dumpfile_os):
     # TODO for each node in the local net, add to graph
 
 
-def augment_from_route(current_graph, dumpfile, dumpfile_os):
+def augment_from_route(current_graph, dumpfile, dumpfile_os, ip):
     pass
 
 
-def augment_from_tr(current_graph, dumpfile, dumpfile_os):
+def augment_from_tr(current_graph, dumpfile, dumpfile_os, ip):
     pass
+
+
+def guess_dumpfile_type(f):
+    return 'arp'
 
 
 def guess_dumpfile_os(f):
@@ -108,12 +118,11 @@ def guess_dumpfile_os(f):
     return 'windows'
 
 
-def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None):
+def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=None):
     """Given a bunch of nodes, if they are not dupes add to graph"""
 
-    # TODO guess the dumpfile os and type based on structure
-    # if dumpfile_type is None:
-    #     dumpfile_type = guess_dumpfile_type(dumpfile)
+    if dumpfile_type is None:
+        dumpfile_type = guess_dumpfile_type(dumpfile)
     if dumpfile_os is None:
         dumpfile_os = guess_dumpfile_os(dumpfile)
     if dumpfile_type not in SUPPORTED_DUMPFILES:
@@ -122,11 +131,11 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None):
         raise MyException("Invalid OS")
 
     if dumpfile_type == 'arp':
-        augment_from_arp(current_graph, dumpfile, dumpfile_os)
+        augment_from_arp(current_graph, dumpfile, dumpfile_os, ip)
     elif dumpfile_type == 'route':
-        augment_from_route(current_graph, dumpfile, dumpfile_os)
+        augment_from_route(current_graph, dumpfile, dumpfile_os, ip)
     elif dumpfile_type == 'traceroute':
-        augment_from_tr(current_graph, dumpfile, dumpfile_os)
+        augment_from_tr(current_graph, dumpfile, dumpfile_os, ip)
     else:
         # this bubbles to the user for now
         raise NotImplementedError("Sorry, haven't written that function yet")
@@ -171,6 +180,12 @@ def main():
     p.add_argument('-d', '--debug', action='store_true')
 
     p.add_argument(
+        '-i', '--ip',
+        help=("The IP address where the dumpfile was taken. "
+              "Default: tries to guess bsaed on the content of the file")
+    )
+
+    p.add_argument(
         '-s', '--savefile',
         help="Use this file to store information. Creates it if it does not exist.",
         default=DEFAULT_SAVEFILE
@@ -212,19 +227,24 @@ def main():
             logger.info("Savefile {} already existing; appending to it".format(savefile))
 
     if not os.path.exists(args.dumpfile):
-        raise SystemError("File {} does not exist".format(args.dumpfile))
+        raise SystemExit("File {} does not exist".format(args.dumpfile))
+
+    #
+    # Boilerplate ends
+    ###
 
     graph = load_graph(savefile)
     try:
         grow_graph(
             graph, args.dumpfile,
             dumpfile_os=args.dumpfile_os,
-            dumpfile_type=args.dumpfile_type
+            dumpfile_type=args.dumpfile_type,
+            ip=args.ip
         )
         save_graph(graph, savefile, args.force)
     except MyException as e:
         logger.error("Something went wrong: {}".format(e))
-        raise SystemError
+        raise SystemExit
 
     exit(0)
 
