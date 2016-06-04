@@ -14,12 +14,15 @@ import os
 import re
 
 import networkx as nx
+import pygraphviz as pgv
 
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
 
-DEFAULT_SAVEFILE = "networkmap.xml.gz"
+DEFAULT_SAVEFILE = "networkmap.dot"
+DEFAULT_GRAPHIMG = "/tmp/out.png"
 SUPPORTED_DUMPFILES = [
     'arp',
     'route',
@@ -125,14 +128,12 @@ def extract_from_tr(dumpfile, dumpfile_os, ip):
 
 def guess_dumpfile_type(f):
     # TODO read the first few lines of the file and guess the dumpfile
-    # FIXME for now, let's try with just one
-    return 'arp'
+    pass
 
 
 def guess_dumpfile_os(f):
     # TODO read the first few lines of the file and guess the OS
-    # FIXME for now, let's try with just one
-    return 'windows'
+    pass
 
 
 def augment_graph(current_graph, new_graph, dumpfile_type):
@@ -142,15 +143,20 @@ def augment_graph(current_graph, new_graph, dumpfile_type):
     # they should not be added as direct edges when growing the graph.
     # 3. traceroutes show paths (i.e. direct edges)
 
-    pass
+    # FIXME
+    return new_graph
 
 
 def net_to_graph(local_net):
     g = nx.Graph()
-    g.add_node('foo')
-    g.add_node('bar')
-    g.add_edge('foo', 'bar')
+    # centre node
+    for centre, neighbours in local_net.items():
+        g.add_node(centre)
+        for n in neighbours:
+            g.add_node(n)
+            g.add_edge(centre, n)
 
+    logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(), g.edges()))
     return g
 
 
@@ -161,8 +167,11 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip
         dumpfile_type = guess_dumpfile_type(dumpfile)
     if dumpfile_os is None:
         dumpfile_os = guess_dumpfile_os(dumpfile)
+
+    logger.debug("Dumpfile: {}, OS: {}".format(dumpfile_type, dumpfile_os))
+
     if dumpfile_type not in SUPPORTED_DUMPFILES:
-        raise MyException("Invalid dumpfile")
+        raise MyException("Invalid dumpfile type")
     if dumpfile_os not in SUPPORTED_OS:
         raise MyException("Invalid OS")
 
@@ -183,7 +192,9 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip
     # extract nodes by IP
     new_graph = net_to_graph(local_net)
     # to combine the output you need to know the dump type
-    augment_graph(current_graph, new_graph, dumpfile_type)
+    final_graph = augment_graph(current_graph, new_graph, dumpfile_type)
+
+    return final_graph
 
 
 # see: http://stackoverflow.com/a/37578709/204634
@@ -196,7 +207,12 @@ def load_graph(savefile):
 
 def save_graph(graph, savefile, force):
     """Does what it says on the tin(c)"""
-    pass
+    if os.path.exists(savefile):
+        if not force:
+            raise SystemExit("File {} exists and you haven't specified --force".format(
+                savefile))
+    nx.nx_agraph.write_dot(graph, savefile)
+    logger.info("Network DOT file saved to {}".format(savefile))
 
 
 def main():
@@ -259,16 +275,22 @@ def main():
 
     graph = load_graph(savefile)
     try:
-        grow_graph(
+        final_graph = grow_graph(
             graph, args.dumpfile,
             dumpfile_os=args.dumpfile_os,
             dumpfile_type=args.dumpfile_type,
             ip=args.ip
         )
-        save_graph(graph, savefile, args.force)
+        save_graph(final_graph, savefile, args.force)
     except MyException as e:
         logger.error("Something went wrong: {}".format(e))
         raise SystemExit
+
+    # convert to image
+    f = pgv.AGraph(savefile)
+    f.layout(prog='circo')
+    f.draw(DEFAULT_GRAPHIMG)
+    logger.info("Output saved in {}".format(DEFAULT_GRAPHIMG))
 
     exit(0)
 

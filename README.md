@@ -17,6 +17,16 @@ Example:
    from A and B. Ideally with pretty icons
 
 
+Usage
+-----
+
+This command draws a simple graph from a windows ARP file dump:
+
+    python src/netgrapher.py samples/arp/windows_7_arp.txt  -t arp -o windows --force
+
+It's work in progress so you have to specify type and OS.
+
+
 Possible alternatives
 ---------------------
 
