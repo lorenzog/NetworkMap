@@ -13,6 +13,8 @@ import pprint
 import os
 import re
 
+import networkx as nx
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -49,10 +51,20 @@ class Node(object):
         self.mac = mac
 
     def __repr__(self):
+        # FIXME should actually be a python expression able to generate
+        # this same object i.e. Node(ip, mac)
         _ret = "Node IP: {}".format(self.ip)
         if self.mac:
             _ret += " [mac: {}]".format(self.mac)
         return _ret
+
+    def __eq__(self, other):
+        # if a mac address is defined,
+        if self.mac and self.other.mac:
+            return self.ip == self.other.ip and self.mac == self.other.mac
+
+        # no mac address specified or one is undefined - we compare by IP
+        return self.ip == self.other.ip
 
 
 def parse_windows_arp(dumpfile, ip):
@@ -91,22 +103,21 @@ def parse_windows_arp(dumpfile, ip):
     return {Node(_local_ip): nodes}
 
 
-def augment_from_arp(current_graph, dumpfile, dumpfile_os, ip):
+def extract_from_arp(dumpfile, dumpfile_os, ip):
     """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
     if dumpfile_os == 'windows':
-        _local_net = parse_windows_arp(dumpfile, ip)
+        local_net = parse_windows_arp(dumpfile, ip)
     else:
         # TODO write parser for linux
         raise NotImplementedError("Sorry dude")
+    return local_net
 
-    logger.debug("Local network as seen from {}: \n{}".format(_local_net.keys(), pprint.pformat(_local_net.values())))
 
-
-def augment_from_route(current_graph, dumpfile, dumpfile_os, ip):
+def extract_from_route(dumpfile, dumpfile_os, ip):
     raise NotImplementedError("Sorry, haven't written this yet")
 
 
-def augment_from_tr(current_graph, dumpfile, dumpfile_os, ip):
+def extract_from_tr(dumpfile, dumpfile_os, ip):
     # NOTE
     # here each hop can be a new node, with an edge connecting back towards `ip`
     raise NotImplementedError("Sorry, haven't written this yet")
@@ -124,6 +135,25 @@ def guess_dumpfile_os(f):
     return 'windows'
 
 
+def augment_graph(current_graph, new_graph, dumpfile_type):
+    # NOTE:
+    # 1. arp tables give immediate neighbours so can add an edge.
+    # 2. routes can give hosts that are not immediately adjacent. In this case,
+    # they should not be added as direct edges when growing the graph.
+    # 3. traceroutes show paths (i.e. direct edges)
+
+    pass
+
+
+def net_to_graph(local_net):
+    g = nx.Graph()
+    g.add_node('foo')
+    g.add_node('bar')
+    g.add_edge('foo', 'bar')
+
+    return g
+
+
 def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=None):
     """Given a bunch of nodes, if they are not dupes add to graph"""
 
@@ -137,29 +167,23 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip
         raise MyException("Invalid OS")
 
     if dumpfile_type == 'arp':
-        augment_from_arp(current_graph, dumpfile, dumpfile_os, ip)
+        local_net = extract_from_arp(dumpfile, dumpfile_os, ip)
     elif dumpfile_type == 'route':
-        augment_from_route(current_graph, dumpfile, dumpfile_os, ip)
+        local_net = extract_from_route(dumpfile, dumpfile_os, ip)
     elif dumpfile_type == 'traceroute':
-        augment_from_tr(current_graph, dumpfile, dumpfile_os, ip)
+        local_net = extract_from_tr(dumpfile, dumpfile_os, ip)
     else:
         # this bubbles to the user for now
         raise NotImplementedError("This dumpfile is not supported.")
 
+    logger.debug("Local network as seen from {}: \n{}".format(
+        local_net.keys(), pprint.pformat(local_net.values()))
+    )
+
     # extract nodes by IP
-
-    # NOTE:
-    # 1. arp tables give immediate neighbours so can add an edge.
-    # 2. routes can give hosts that are not immediately adjacent. In this case,
-    # they should not be added as direct edges when growing the graph.
-    # 3. traceroutes show paths (i.e. direct edges)
-
-    # TODO
-    # then grow the existing graph (if any in the file) with the latest 'view'
-    # from the dumpfile
-
-    # XXX
-    # maybe this function can generate a graph, return it to caller, and then grow/walk it?
+    new_graph = net_to_graph(local_net)
+    # to combine the output you need to know the dump type
+    augment_graph(current_graph, new_graph, dumpfile_type)
 
 
 # see: http://stackoverflow.com/a/37578709/204634
