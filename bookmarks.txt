@@ -1,0 +1,4 @@
+http://pygraphviz.github.io/documentation/pygraphviz-1.3rc1/reference/agraph.html
+https://networkx.readthedocs.io/en/stable/reference/introduction.html
+https://networkx.readthedocs.io/en/stable/tutorial/tutorial.html#nodes
+https://networkx.readthedocs.io/en/stable/reference/generated/networkx.relabel.convert_node_labels_to_integers.html?highlight=convert_node_labels_to_integers#networkx.relabel.convert_node_labels_to_integers
