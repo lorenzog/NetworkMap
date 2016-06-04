@@ -28,14 +28,17 @@ SUPPORTED_OS = [
 ]
 
 
+# NOTE: do we really need networkx? Can we do everything with pygraphviz?
+# https://github.com/pygraphviz/pygraphviz/blob/master/examples/simple.py
+# mmh maybe not - networkx can help traversing the graphs, finding dupes, etc.
+
+# using networkx:
+# https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
+
 class MyException(Exception):
     """Generic exception to handle program flow exits"""
     pass
 
-
-# NOTE: maybe instead of passing the graph around, it makes more sense to
-# generate a new graph from each file, then pass that to a 'merging graph' routine that
-# can find dupes, augment graph with new edges, etc. etc?
 
 # NOTE: what about 'ghost' IPs or multicast/broadcast?
 
@@ -97,18 +100,21 @@ def augment_from_arp(current_graph, dumpfile, dumpfile_os, ip):
         raise NotImplementedError("Sorry dude")
 
     logger.debug("Local network as seen from {}: \n{}".format(_local_net.keys(), pprint.pformat(_local_net.values())))
-    # TODO for each node in the local net, add to graph
 
 
 def augment_from_route(current_graph, dumpfile, dumpfile_os, ip):
-    pass
+    raise NotImplementedError("Sorry, haven't written this yet")
 
 
 def augment_from_tr(current_graph, dumpfile, dumpfile_os, ip):
-    pass
+    # NOTE
+    # here each hop can be a new node, with an edge connecting back towards `ip`
+    raise NotImplementedError("Sorry, haven't written this yet")
 
 
 def guess_dumpfile_type(f):
+    # TODO read the first few lines of the file and guess the dumpfile
+    # FIXME for now, let's try with just one
     return 'arp'
 
 
@@ -138,17 +144,9 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip
         augment_from_tr(current_graph, dumpfile, dumpfile_os, ip)
     else:
         # this bubbles to the user for now
-        raise NotImplementedError("Sorry, haven't written that function yet")
+        raise NotImplementedError("This dumpfile is not supported.")
 
     # extract nodes by IP
-
-    # TODO find the ip of the current node, or 'centre' of this view
-    # Maybe a dictionary like this?
-    # { 'current_ip': [
-    #       list of nodes, ...
-    #   ]
-    # }
-    # then make a new graph object
 
     # NOTE:
     # 1. arp tables give immediate neighbours so can add an edge.
@@ -160,10 +158,12 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip
     # then grow the existing graph (if any in the file) with the latest 'view'
     # from the dumpfile
 
-    pass
+    # XXX
+    # maybe this function can generate a graph, return it to caller, and then grow/walk it?
 
 
 # see: http://stackoverflow.com/a/37578709/204634
+# but also: https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
 def load_graph(savefile):
     """Does what it says on the tin(c)"""
     # return graph
