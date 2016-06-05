@@ -147,14 +147,15 @@ def augment_graph(loaded_graph, new_graph, dumpfile_type):
     return nx.union(loaded_graph, new_graph)
 
 
-def net_to_graph(local_net):
+def net_to_graph(local_net, dumpfile_type):
     g = nx.Graph()
     # centre node
     for centre, neighbours in local_net.items():
         g.add_node(centre)
         for n in neighbours:
-            g.add_node(n)
-            g.add_edge(centre, n)
+            # no need to add node - add_edge will take care of that
+            # g.add_node(n)
+            g.add_edge(centre, n, source=dumpfile_type)
 
     logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(), g.edges()))
     return g
@@ -189,8 +190,10 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
         local_net.keys(), pprint.pformat(local_net.values()))
     )
 
+    # XXX maybe it's easier if we use a Graph as a data structure
+    # so there's no need to create one and parse it?
     # extract nodes by IP
-    new_graph = net_to_graph(local_net)
+    new_graph = net_to_graph(local_net, dumpfile_type)
     # to combine the output you need to know the dump type
     final_graph = augment_graph(loaded_graph, new_graph, dumpfile_type)
 

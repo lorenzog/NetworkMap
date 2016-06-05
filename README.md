@@ -24,7 +24,7 @@ This command draws a simple graph from a windows ARP file dump:
 
     python src/netgrapher.py samples/arp/windows_7_arp.txt  -t arp -o windows --force
 
-It's work in progress so you have to specify type and OS.
+It's work in progress so you have to specify type and OS for now.
 
 
 Possible alternatives
