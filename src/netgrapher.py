@@ -27,15 +27,18 @@ logger.setLevel(logging.INFO)
 DEFAULT_SAVEFILE = "networkmap.dot"
 DEFAULT_GRAPHIMG = "/tmp/out.png"
 
+# TODO add nmap support for host type
 # TODO add 'hosts' file for ip -> name support
 SUPPORTED_DUMPFILES = [
     'arp',
     'route',
     'traceroute',
 ]
+
 SUPPORTED_OS = [
     'windows',
-    'linux'
+    'linux',
+    'openbsd'
 ]
 
 
@@ -67,6 +70,7 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
 
 
 def extract_from_route(dumpfile, dumpfile_os, ip):
+    # TODO
     raise NotImplementedError("Sorry, haven't written this yet")
 
 
@@ -86,7 +90,7 @@ def extract_from_tr(dumpfile, dumpfile_os, ip):
 
     # link each node with the preceding one
     for hopno, node in enumerate(hops[1:]):
-        g.add_edge(hops[hopno], node)
+        g.add_edge(hops[hopno], node, source="traceroute")
 
     return g
 
