@@ -136,7 +136,7 @@ def guess_dumpfile_os(f):
     pass
 
 
-def augment_graph(current_graph, new_graph, dumpfile_type):
+def augment_graph(loaded_graph, new_graph, dumpfile_type):
     # NOTE:
     # 1. arp tables give immediate neighbours so can add an edge.
     # 2. routes can give hosts that are not immediately adjacent. In this case,
@@ -144,7 +144,8 @@ def augment_graph(current_graph, new_graph, dumpfile_type):
     # 3. traceroutes show paths (i.e. direct edges)
 
     # FIXME there's no graph augmntation yet - we just return the new one.
-    return new_graph
+    # return new_graph
+    return nx.union(loaded_graph, new_graph)
 
 
 def net_to_graph(local_net):
@@ -160,7 +161,7 @@ def net_to_graph(local_net):
     return g
 
 
-def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=None):
+def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=None):
     """Given a bunch of nodes, if they are not dupes add to graph"""
 
     if dumpfile_type is None:
@@ -192,7 +193,7 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip
     # extract nodes by IP
     new_graph = net_to_graph(local_net)
     # to combine the output you need to know the dump type
-    final_graph = augment_graph(current_graph, new_graph, dumpfile_type)
+    final_graph = augment_graph(loaded_graph, new_graph, dumpfile_type)
 
     return final_graph
 
