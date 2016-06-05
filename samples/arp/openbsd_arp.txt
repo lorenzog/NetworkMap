@@ -1,0 +1,7 @@
+# note - IP is 192.168.1.108
+$ arp -an
+Host                                 Ethernet Address   Netif Expire Flags
+192.168.1.1                          b0:48:7a:de:46:64   iwn0 19m57s     
+192.168.1.100                        8c:2d:aa:58:e3:09   iwn0 19m57s     
+192.168.1.108                        00:21:6b:c6:27:2e   iwn0 permanent l
+
