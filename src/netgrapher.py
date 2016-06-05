@@ -143,8 +143,7 @@ def augment_graph(loaded_graph, new_graph, dumpfile_type):
     # they should not be added as direct edges when growing the graph.
     # 3. traceroutes show paths (i.e. direct edges)
 
-    # FIXME there's no graph augmntation yet - we just return the new one.
-    # return new_graph
+    # FIXME a union makes sense only when loaded graph and new graph are from ARP
     return nx.union(loaded_graph, new_graph)
 
 

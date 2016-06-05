@@ -1,0 +1,7 @@
+
+Interface: 10.137.2.16 --- 0x11
+  Internet Address      Physical Address      Type
+  10.137.2.2            fe-ff-ff-ff-ff-ff     dynamic   
+  224.0.0.22            01-00-5e-00-00-16     static    
+  224.0.0.252           01-00-5e-00-00-fc     static    
+  239.255.255.250       01-00-5e-7f-ff-fa     static    
