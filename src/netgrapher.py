@@ -32,7 +32,8 @@ SUPPORTED_DUMPFILES = [
     'traceroute',
 ]
 SUPPORTED_OS = [
-    'windows'
+    'windows',
+    'linux'
 ]
 
 
@@ -73,6 +74,22 @@ class Node(object):
         return self.ip == self.other.ip
 
 
+def parse_linux_arp(dumpfile, ip):
+    nodes = []
+    with open(dumpfile) as f:
+        for line in f.readlines():
+            # Address HWtype HWaddress Flags Mask Iface
+            # 10.137.1.8 ether 00:16:3e:5e:6c:06 C vif2.0
+            m = re.match(r'([\w.]+)\s+\w+\s+(([0-9a-f]{2}:){5}[0-9a-f]{2})', line)
+            if m and len(m.groups()) >= 2:
+                _node_ip = m.group(1)
+                _node_mac = m.group(2)
+                logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
+                nodes.append(Node(_node_ip, _node_mac))
+                continue
+    return Node(ip), nodes
+
+
 def parse_windows_arp(dumpfile, ip):
     """Windows ARP file parsing"""
     nodes = []
@@ -97,7 +114,7 @@ def parse_windows_arp(dumpfile, ip):
             # regexp to match an IP: ([\w.]+)
             # regexp to match a mac: (([0-9a-f]{2}-){5}[0-9a-f])
             # start with two empty spaces,
-            m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f])', line)
+            m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f]{2})', line)
             if m and len(m.groups()) >= 2:
                 _node_ip = m.group(1)
                 _node_mac = m.group(2)
@@ -114,8 +131,9 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
     if dumpfile_os == 'windows':
         # local_net = parse_windows_arp(dumpfile, ip)
         centre_node, neighbours = parse_windows_arp(dumpfile, ip)
+    elif dumpfile_os == 'linux':
+        centre_node, neighbours = parse_linux_arp(dumpfile, ip)
     else:
-        # TODO write parser for linux
         raise NotImplementedError("Sorry dude")
 
     g = nx.Graph()
@@ -268,11 +286,14 @@ def main():
         logger.error("Something went wrong: {}".format(e))
         raise SystemExit
 
-    # convert to image
-    f = pgv.AGraph(savefile)
-    f.layout(prog='circo')
-    f.draw(DEFAULT_GRAPHIMG)
-    logger.info("Output saved in {}".format(DEFAULT_GRAPHIMG))
+    try:
+        # convert to image
+        f = pgv.AGraph(savefile)
+        f.layout(prog='circo')
+        f.draw(DEFAULT_GRAPHIMG)
+        logger.info("Output saved in {}".format(DEFAULT_GRAPHIMG))
+    except IOError as e:
+        logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually")
 
     exit(0)
 
