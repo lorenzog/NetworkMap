@@ -143,7 +143,7 @@ def augment_graph(current_graph, new_graph, dumpfile_type):
     # they should not be added as direct edges when growing the graph.
     # 3. traceroutes show paths (i.e. direct edges)
 
-    # FIXME
+    # FIXME there's no graph augmntation yet - we just return the new one.
     return new_graph
 
 
@@ -201,8 +201,11 @@ def grow_graph(current_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip
 # but also: https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
 def load_graph(savefile):
     """Does what it says on the tin(c)"""
-    # return graph
-    pass
+    if os.path.exists(savefile):
+        g = nx.nx_agraph.read_dot(savefile)
+    else:
+        g = nx.Graph()
+    return g
 
 
 def save_graph(graph, savefile, force):
@@ -273,10 +276,11 @@ def main():
     # Boilerplate ends
     ###
 
-    graph = load_graph(savefile)
+    loaded_graph = load_graph(savefile)
+    logger.debug("Loaded graph:\nnodes\t{}\nedges\t{}".format(loaded_graph.nodes(), loaded_graph.edges()))
     try:
         final_graph = grow_graph(
-            graph, args.dumpfile,
+            loaded_graph, args.dumpfile,
             dumpfile_os=args.dumpfile_os,
             dumpfile_type=args.dumpfile_type,
             ip=args.ip
