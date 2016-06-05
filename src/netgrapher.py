@@ -11,14 +11,16 @@ import argparse
 import logging
 # import pprint
 import os
-import re
 import shutil
 
 import networkx as nx
 import pygraphviz as pgv
 
+import parsers
+from errors import MyException
 
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger('netgrapher')
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
@@ -44,103 +46,21 @@ SUPPORTED_OS = [
 # using networkx:
 # https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
 
-class MyException(Exception):
-    """Generic exception to handle program flow exits"""
-    pass
-
-
 # NOTE: what about 'ghost' IPs or multicast/broadcast?
-
-
-class Node(object):
-    def __init__(self, ip=None, mac=None):
-        self.ip = ip
-        self.mac = mac
-
-    def __repr__(self):
-        # FIXME should actually be a python expression able to generate
-        # this same object i.e. Node(ip, mac)
-        _ret = "Node IP: {}".format(self.ip)
-        if self.mac:
-            _ret += " [mac: {}]".format(self.mac)
-        return _ret
-
-    def __eq__(self, other):
-        # if a mac address is defined,
-        if self.mac and self.other.mac:
-            return self.ip == self.other.ip and self.mac == self.other.mac
-
-        # no mac address specified or one is undefined - we compare by IP
-        return self.ip == self.other.ip
-
-
-def parse_linux_arp(dumpfile, ip):
-    nodes = []
-    with open(dumpfile) as f:
-        for line in f.readlines():
-            # Address HWtype HWaddress Flags Mask Iface
-            # 10.137.1.8 ether 00:16:3e:5e:6c:06 C vif2.0
-            m = re.match(r'([\w.]+)\s+\w+\s+(([0-9a-f]{2}:){5}[0-9a-f]{2})', line)
-            if m and len(m.groups()) >= 2:
-                _node_ip = m.group(1)
-                _node_mac = m.group(2)
-                logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
-                nodes.append(Node(_node_ip, _node_mac))
-                continue
-    return Node(ip), nodes
-
-
-def parse_windows_arp(dumpfile, ip):
-    """Windows ARP file parsing"""
-    nodes = []
-    with open(dumpfile) as f:
-        for line in f.readlines():
-            # the first line looks like:
-            # Interface: 10.137.2.16 --- 0x11
-            m = re.match(r'Interface: (.+) ---', line)
-            if m and len(m.groups()) >= 1:
-                _local_ip = m.group(1)
-                logger.debug("Found centre node: {}".format(_local_ip))
-                if ip is not None and _local_ip != ip:
-                    raise MyException(
-                        "The IP found in the ARP file is {} but "
-                        "you supplied {}. Aborting...".format(
-                            _local_ip, ip)
-                    )
-                continue
-
-            # lines with IPs and MAC addresses look like:
-            #   10.137.2.1            fe-ff-ff-ff-ff-ff     dynamic
-            # regexp to match an IP: ([\w.]+)
-            # regexp to match a mac: (([0-9a-f]{2}-){5}[0-9a-f])
-            # start with two empty spaces,
-            m = re.match(r'  ([\w.]+)\s+(([0-9a-f]{2}-){5}[0-9a-f]{2})', line)
-            if m and len(m.groups()) >= 2:
-                _node_ip = m.group(1)
-                _node_mac = m.group(2)
-                logger.debug("Found node {} with mac {}".format(_node_ip, _node_mac))
-                nodes.append(Node(_node_ip, _node_mac))
-                continue
-
-    # centre node and neighbours
-    return Node(_local_ip), nodes
 
 
 def extract_from_arp(dumpfile, dumpfile_os, ip):
     """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
     if dumpfile_os == 'windows':
-        # local_net = parse_windows_arp(dumpfile, ip)
-        centre_node, neighbours = parse_windows_arp(dumpfile, ip)
+        centre_node, neighbours = parsers.parse_windows_arp(dumpfile, ip)
     elif dumpfile_os == 'linux':
-        centre_node, neighbours = parse_linux_arp(dumpfile, ip)
+        centre_node, neighbours = parsers.parse_linux_arp(dumpfile, ip)
     else:
         raise NotImplementedError("Sorry dude")
 
     g = nx.Graph()
-    # centre node
-    centre = Node(centre_node)
     for node in neighbours:
-        g.add_edge(centre, node, source="arp")
+        g.add_edge(centre_node, node, source="arp")
 
     logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(), g.edges()))
     return g
@@ -153,7 +73,22 @@ def extract_from_route(dumpfile, dumpfile_os, ip):
 def extract_from_tr(dumpfile, dumpfile_os, ip):
     # NOTE
     # here each hop can be a new node, with an edge connecting back towards `ip`
-    raise NotImplementedError("Sorry, haven't written this yet")
+    if dumpfile_os == 'linux':
+        # returns an (ordered!) list of nodes, where the first is the centre node
+        hops = parsers.parse_linux_tr(dumpfile, ip)
+    else:
+        raise NotImplementedError("Sorry, haven't written this yet")
+
+    g = nx.Graph()
+    if len(hops) == 0:
+        logger.info("No hops found in traceroute file")
+        return g
+
+    # link each node with the preceding one
+    for hopno, node in enumerate(hops[1:]):
+        g.add_edge(hops[hopno], node)
+
+    return g
 
 
 def guess_dumpfile_type(f):
@@ -224,6 +159,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('-d', '--debug', action='store_true')
 
+    # TODO this can be a list, for multiple interfaces. That makes it fun to implement..
     p.add_argument(
         '-i', '--ip',
         help=("The IP address where the dumpfile was taken. "
