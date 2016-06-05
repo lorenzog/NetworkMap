@@ -9,9 +9,10 @@ Does stuff.
 
 import argparse
 import logging
-import pprint
+# import pprint
 import os
 import re
+import shutil
 
 import networkx as nx
 import pygraphviz as pgv
@@ -23,6 +24,8 @@ logger.setLevel(logging.INFO)
 
 DEFAULT_SAVEFILE = "networkmap.dot"
 DEFAULT_GRAPHIMG = "/tmp/out.png"
+
+# TODO add 'hosts' file for ip -> name support
 SUPPORTED_DUMPFILES = [
     'arp',
     'route',
@@ -102,18 +105,27 @@ def parse_windows_arp(dumpfile, ip):
                 nodes.append(Node(_node_ip, _node_mac))
                 continue
 
-    # for now return a simple dict centre -> [nodes]
-    return {Node(_local_ip): nodes}
+    # centre node and neighbours
+    return Node(_local_ip), nodes
 
 
 def extract_from_arp(dumpfile, dumpfile_os, ip):
     """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
     if dumpfile_os == 'windows':
-        local_net = parse_windows_arp(dumpfile, ip)
+        # local_net = parse_windows_arp(dumpfile, ip)
+        centre_node, neighbours = parse_windows_arp(dumpfile, ip)
     else:
         # TODO write parser for linux
         raise NotImplementedError("Sorry dude")
-    return local_net
+
+    g = nx.Graph()
+    # centre node
+    centre = Node(centre_node)
+    for node in neighbours:
+        g.add_edge(centre, node, source="arp")
+
+    logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(), g.edges()))
+    return g
 
 
 def extract_from_route(dumpfile, dumpfile_os, ip):
@@ -136,31 +148,6 @@ def guess_dumpfile_os(f):
     pass
 
 
-def augment_graph(loaded_graph, new_graph, dumpfile_type):
-    # NOTE:
-    # 1. arp tables give immediate neighbours so can add an edge.
-    # 2. routes can give hosts that are not immediately adjacent. In this case,
-    # they should not be added as direct edges when growing the graph.
-    # 3. traceroutes show paths (i.e. direct edges)
-
-    # FIXME a union makes sense only when loaded graph and new graph are from ARP
-    return nx.union(loaded_graph, new_graph)
-
-
-def net_to_graph(local_net, dumpfile_type):
-    g = nx.Graph()
-    # centre node
-    for centre, neighbours in local_net.items():
-        g.add_node(centre)
-        for n in neighbours:
-            # no need to add node - add_edge will take care of that
-            # g.add_node(n)
-            g.add_edge(centre, n, source=dumpfile_type)
-
-    logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(), g.edges()))
-    return g
-
-
 def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=None):
     """Given a bunch of nodes, if they are not dupes add to graph"""
 
@@ -177,26 +164,21 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
         raise MyException("Invalid OS")
 
     if dumpfile_type == 'arp':
-        local_net = extract_from_arp(dumpfile, dumpfile_os, ip)
+        new_graph = extract_from_arp(dumpfile, dumpfile_os, ip)
     elif dumpfile_type == 'route':
-        local_net = extract_from_route(dumpfile, dumpfile_os, ip)
+        new_graph = extract_from_route(dumpfile, dumpfile_os, ip)
     elif dumpfile_type == 'traceroute':
-        local_net = extract_from_tr(dumpfile, dumpfile_os, ip)
+        new_graph = extract_from_tr(dumpfile, dumpfile_os, ip)
     else:
         # this bubbles to the user for now
         raise NotImplementedError("This dumpfile is not supported.")
 
-    logger.debug("Local network as seen from {}: \n{}".format(
-        local_net.keys(), pprint.pformat(local_net.values()))
-    )
-
-    # XXX maybe it's easier if we use a Graph as a data structure
-    # so there's no need to create one and parse it?
-    # extract nodes by IP
-    new_graph = net_to_graph(local_net, dumpfile_type)
-    # to combine the output you need to know the dump type
-    final_graph = augment_graph(loaded_graph, new_graph, dumpfile_type)
-
+    # NOTE:
+    # 1. arp tables give immediate neighbours so can add an edge.
+    # 2. routes can give hosts that are not immediately adjacent. In this case,
+    # they should not be added as direct edges when growing the graph.
+    # 3. traceroutes show paths (i.e. direct edges)
+    final_graph = nx.union(loaded_graph, new_graph)
     return final_graph
 
 
@@ -213,10 +195,9 @@ def load_graph(savefile):
 
 def save_graph(graph, savefile, force):
     """Does what it says on the tin(c)"""
-    if os.path.exists(savefile):
-        if not force:
-            raise SystemExit("File {} exists and you haven't specified --force".format(
-                savefile))
+    if os.path.exists(savefile) and not force:
+        shutil.copy(savefile, "{}.bak".format(savefile))
+        logger.info("Network DOT file backup saved: {}.bak".format(savefile))
     nx.nx_agraph.write_dot(graph, savefile)
     logger.info("Network DOT file saved to {}".format(savefile))
 
@@ -240,6 +221,7 @@ def main():
         '-f', '--force', action='store_true',
         help="Overwrites the savefile"
     )
+    p.add_argument('-n', '--dry-run', action='store_true')
 
     # the dump file to load
     p.add_argument('dumpfile')
@@ -262,16 +244,6 @@ def main():
         logger.debug("Debug logging enabled")
 
     savefile = args.savefile
-    # default: create a new savefile
-    if not os.path.exists(savefile):
-        logger.debug("No savefile found {}. Will create a new one".format(savefile))
-    else:
-        if args.force:
-            logger.debug("Overwriting savefile {}".format(savefile))
-        else:
-            # if the file already exist, don't overwrite but assume we're adding to it.
-            logger.info("Savefile {} already existing; appending to it".format(savefile))
-
     if not os.path.exists(args.dumpfile):
         raise SystemExit("File {} does not exist".format(args.dumpfile))
 
@@ -288,7 +260,10 @@ def main():
             dumpfile_type=args.dumpfile_type,
             ip=args.ip
         )
-        save_graph(final_graph, savefile, args.force)
+        if not args.dry_run:
+            save_graph(final_graph, savefile, args.force)
+        else:
+            logger.info("Dry-run mode selected -not writing into savefile")
     except MyException as e:
         logger.error("Something went wrong: {}".format(e))
         raise SystemExit
