@@ -143,6 +143,7 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
 # but also: https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
 def load_graph(savefile):
     """Does what it says on the tin(c)"""
+    # TODO how to start a new graph? or ignore the previous one
     if os.path.exists(savefile):
         g = nx.nx_agraph.read_dot(savefile)
     else:
@@ -177,7 +178,8 @@ def main():
     )
     p.add_argument(
         '-f', '--force', action='store_true',
-        help="Overwrites the savefile"
+        # TODO this needs re-thinking
+        help="Overwrites the savefile without making a backup first"
     )
     p.add_argument('-n', '--dry-run', action='store_true')
 
