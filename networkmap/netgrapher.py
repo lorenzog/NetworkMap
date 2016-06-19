@@ -80,7 +80,7 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
     if dumpfile_type is None or dumpfile_os is None:
         # have to open the file for reading once anyway
         guessed_type, guessed_os = parsers.guess_dumpfile_type_and_os(dumpfile)
-        logger.debug("Guessed file type: {}, OS: {}".format(guessed_type, guessed_os))
+        logger.info("Guessed file type: {}, OS: {}".format(guessed_type, guessed_os))
 
     # decide whether to use the guess or the specified dumpfile type
     if dumpfile_type is None:
