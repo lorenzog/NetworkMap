@@ -5,9 +5,33 @@ from node import Node
 from errors import MyException
 
 
-# XXX this has to be the same name as he logger object in
+# XXX this has to be the same name as the logger object in
 # netgrapher.py...
 logger = logging.getLogger('netgrapher')
+
+guess_data = (
+    (('arp', 'windows'), r'^Interface:\s+'),
+    (('arp', 'linux'), r'^Address\s+HWtype\s+HWaddress\s+Flags\s+Mask\s+Iface$'),
+    (('arp', 'openbsd'), r'^Host\s+Ethernet\sAddress\s+Netif\sExpire\sFlags$'),
+    (('traceroute', 'linux'), r'^traceroute to .+ \([\d.]+\), \d+ hops max, \d+ byte packets$')
+)
+
+
+def guess_dumpfile_type_and_os(dumpfile):
+    """Returns file_type, os when any line of the input file matches the regexp"""
+    with open(dumpfile) as f:
+        for line in f.readlines():
+            logger.debug("line:\n{}".format(line))
+            for type_os, regexp in guess_data:
+                m = re.match(regexp, line)
+                if m:
+                    # got match
+                    file_type, os = type_os
+                    logger.debug("Match: {}, {}".format(file_type, os))
+                    return file_type, os
+                logger.debug("No match for {}".format(type_os))
+
+    return None, None
 
 
 def parse_linux_tr(dumpfile, ip):

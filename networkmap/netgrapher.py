@@ -13,7 +13,6 @@ Does stuff.
 # TODO add support for multi-interface
 
 import logging
-# import pprint
 
 import networkx as nx
 
@@ -88,23 +87,33 @@ def extract_from_tr(dumpfile, dumpfile_os, ip):
     return g
 
 
-def guess_dumpfile_type(f):
-    # TODO read the first few lines of the file and guess the dumpfile
-    pass
-
-
-def guess_dumpfile_os(f):
-    # TODO read the first few lines of the file and guess the OS
-    pass
-
-
 def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=None):
     """Given a bunch of nodes, if they are not dupes add to graph"""
 
+    if dumpfile_type is None or dumpfile_os is None:
+        # have to open the file for reading once anyway
+        guessed_type, guessed_os = parsers.guess_dumpfile_type_and_os(dumpfile)
+        logger.debug("Guessed file type: {}, OS: {}".format(guessed_type, guessed_os))
+
+    # decide whether to use the guess or the specified dumpfile type
     if dumpfile_type is None:
-        dumpfile_type = guess_dumpfile_type(dumpfile)
+        if guessed_type is None:
+            raise MyException("Cannot guess file type. Please specify it manually.")
+        else:
+            dumpfile_type = guessed_type
+    else:
+        if guessed_type is not None and dumpfile_type != guessed_type:
+            logger.warn("Guessed type does not match specified type. Ignoring guess.")
+
+    # same for the OS
     if dumpfile_os is None:
-        dumpfile_os = guess_dumpfile_os(dumpfile)
+        if guessed_os is None:
+            raise MyException("Cannot guess OS. Please specify it manually.")
+        else:
+            dumpfile_os = guessed_os
+    else:
+        if guessed_os is not None and dumpfile_os != guessed_os:
+            logger.warn("Guessed type does not match specified type. Ignoring guess.")
 
     logger.debug("Dumpfile: {}, OS: {}".format(dumpfile_type, dumpfile_os))
 
