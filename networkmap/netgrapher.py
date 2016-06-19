@@ -50,6 +50,19 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
 
 def extract_from_route(dumpfile, dumpfile_os, ip):
     # TODO
+
+    # NOTE from 'route' man page:
+    #       Flags  Possible flags include
+    #           U (route is up)
+    #           H (target is a host)
+    #           G (use gateway)
+    #           R (reinstate route for dynamic routing)
+    #           D (dynamically installed by daemon or redirect)
+    #           M (modified from routing daemon or redirect)
+    #           A (installed by addrconf)
+    #           C (cache entry)
+    #           !  (reject route)
+
     raise NotImplementedError("Sorry, haven't written this yet")
 
 
