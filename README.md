@@ -47,9 +47,9 @@ For RPM based systems:
     yum install graphviz graphviz-devel
 
 
-### Errors when installing pygraphviz
+### Weird errors when installing pygraphviz
 
-If you get a similar error:
+If you get a similar error on a Debian-based system:
 
  File "/home/user/dev/NetworkMap/venv/local/lib/python2.7/site-packages/pygraphviz/graphviz.py", line 24, in swig_import_helper
      _mod = imp.load_module('_graphviz', fp, pathname, description)
@@ -61,6 +61,14 @@ Then fix it like that:
     pip install pygraphviz --install-option="--include-path=/usr/include/graphviz" --install-option="--library-path=/usr/lib/graphviz/"
 
 Source: http://stackoverflow.com/questions/32885486/pygraphviz-importerror-undefined-symbol-agundirected
+
+---
+
+If you get this error on a Fedora-based system:
+
+    gcc: error: /usr/lib/rpm/redhat/redhat-hardened-cc1: No such file or directory
+
+You need to install redhat-rpm-config. Source: http://stackoverflow.com/a/34641068/204634
 
 Usage
 -----

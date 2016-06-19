@@ -10,6 +10,7 @@ Does stuff.
 # TODO add nmap support for host type
 # TODO add 'hosts' file for ip -> name support
 # NOTE: what about 'ghost' IPs or multicast/broadcast?
+# TODO add support for multi-interface
 
 import logging
 # import pprint

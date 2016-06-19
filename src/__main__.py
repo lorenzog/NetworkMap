@@ -15,12 +15,8 @@ import shutil
 
 import networkx as nx
 
-# those are required to catch GEXF files import errors
-from xml.etree.cElementTree import ParseError as cParseError
-from xml.etree.ElementTree import ParseError as ParseError
-
 from errors import MyException
-from netgrapher import grow_graph
+from netgrapher import grow_graph, SUPPORTED_DUMPFILES, SUPPORTED_OS
 from node import Node
 
 
@@ -29,23 +25,14 @@ logger = logging.getLogger('netgrapher')
 DEFAULT_SAVEFILE = "networkmap.dot"
 DEFAULT_GRAPHIMG = "/tmp/out.png"
 
-SUPPORTED_DUMPFILES = [
-    'arp',
-    'route',
-    'traceroute',
-]
-
-SUPPORTED_OS = [
-    'windows',
-    'linux',
-    'openbsd'
-]
-
 SUPPORTED_FILE_FORMATS = [
     'GEXF',
     'DOT'
 ]
-DEFAULT_FILE_FORMAT = 'GEXF'
+DEFAULT_FILE_FORMAT = 'DOT'
+
+# TODO json format looks promising when interacting with d3:
+# http://bl.ocks.org/mbostock/4062045
 
 
 # see: http://stackoverflow.com/a/37578709/204634
@@ -54,12 +41,18 @@ def load_graph(savefile, file_format):
     """Does what it says on the tin(c)"""
     if os.path.exists(savefile):
         if file_format == 'GEXF':
+            # importing here because if there's no xml.etree installed,
+            # things should still work with other file formats.
+            from xml.etree.cElementTree import ParseError as cParseError
+            from xml.etree.ElementTree import ParseError as ParseError
+
             try:
                 g = nx.read_gexf(savefile, node_type=Node)
             # I hate catching 'Exception' but read_gexf raises
             # 'cElementTree.ParseError' (or ElementTree.ParseError, no 'c')
             # which is nowhere to be found
             # except Exception as e:
+            # alternative solution, not sure it's better or not:
             except (cParseError, ParseError) as e:
                 raise MyException("Cannot read file {} using format {}: {}".format(
                     savefile, file_format, e))
@@ -153,17 +146,18 @@ def main():
         logger.error("Something went wrong: {}".format(e))
         raise SystemExit
 
-    try:
-        import pygraphviz as pgv
-        # convert to image
-        f = pgv.AGraph(savefile)
-        f.layout(prog='circo')
-        f.draw(DEFAULT_GRAPHIMG)
-        logger.info("Output saved in {}".format(DEFAULT_GRAPHIMG))
-    except ImportError as e:
-        logger.debug("Cannot find pygraphviz.")
-    except IOError as e:
-        logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually")
+    if args.file_format == 'DOT':
+        try:
+            import pygraphviz as pgv
+            # convert to image
+            f = pgv.AGraph(savefile)
+            f.layout(prog='circo')
+            f.draw(DEFAULT_GRAPHIMG)
+            logger.info("Output saved in {}".format(DEFAULT_GRAPHIMG))
+        except ImportError as e:
+            logger.debug("Cannot find pygraphviz.")
+        except IOError as e:
+            logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually")
 
     exit(0)
 
