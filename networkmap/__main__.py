@@ -144,7 +144,7 @@ def main():
         else:
             logger.info("Dry-run mode selected -not writing into savefile")
     except MyException as e:
-        logger.error("Something went wrong: {}".format(e))
+        logger.error("{}".format(e))
         raise SystemExit
 
     if args.file_format == 'DOT':
@@ -154,11 +154,11 @@ def main():
             f = pgv.AGraph(savefile)
             f.layout(prog='circo')
             f.draw(DEFAULT_GRAPHIMG)
-            logger.info("Output saved in {}".format(DEFAULT_GRAPHIMG))
+            logger.info("Graph image saved in {}".format(DEFAULT_GRAPHIMG))
         except ImportError as e:
             logger.debug("Cannot find pygraphviz.")
         except IOError as e:
-            logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually")
+            logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually (e.g. neato, circo)")
 
     exit(0)
 

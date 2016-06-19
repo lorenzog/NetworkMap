@@ -41,14 +41,14 @@ Usage
 
 This command draws a simple graph from a windows ARP file dump:
 
-    python networkmap samples/arp/windows_7_arp.txt  -t arp -o windows 
+    python networkmap samples/arp/windows_7_arp.txt
     # then look at the sample:
     geeqie /tmp/out.png
 
 You are not limited to one sample:
 
     # note that with traceroute you need to specify the IP of the host
-    python networkmap samples/traceroute/linux_traceroute.txt -t traceroute -o linux --ip 1.2.3.4
+    python networkmap samples/traceroute/linux_traceroute.txt --ip 1.2.3.4
     geeqie /tmp/out.png
 
 It's work in progress so you have to specify type and OS for now.

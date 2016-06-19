@@ -55,3 +55,9 @@ class TestRoute(object):
         _t, _o = guess(dumpfile)
         assert _t == 'route'
         assert _o == 'linux'
+
+    def test_guess_windows(self):
+        dumpfile = os.path.join(route_dir, 'windows_7_route_print.txt')
+        _t, _o = guess(dumpfile)
+        assert _t == 'route'
+        assert _o == 'windows'

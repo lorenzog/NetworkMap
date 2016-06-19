@@ -15,10 +15,12 @@ guess_data = (
     (('arp', 'windows'), r'^Interface:\s+'),
     (('arp', 'linux'), r'^Address\s+HWtype\s+HWaddress\s+Flags\s+Mask\s+Iface$'),
     (('arp', 'openbsd'), r'^Host\s+Ethernet\sAddress\s+Netif\sExpire\sFlags$'),
+    #
     (('traceroute', 'linux'), r'^traceroute to .+ \([\d.]+\), \d+ hops max, \d+ byte packets$'),
     # doubled, just because
     (('route', 'linux'), r'^Kernel IP routing table$'),
     (('route', 'linux'), r'^Destination\s+Gateway\s+Genmask\s+Flags\sMetric\sRef\s+Use\sIface$'),
+    (('route', 'windows'), r'===========================================================================')
 )
 
 # build separate lists for the help menu
@@ -51,7 +53,7 @@ def parse_linux_tr(dumpfile, ip):
     hops = []
     if ip is None:
         raise MyException("Linux ARP does not contain the IP of the "
-                          "centre node; please supply it manually\n")
+                          "centre node; please supply it manually with --ip\n")
     hops.append(Node(ip))
     with open(dumpfile) as f:
         for line in f.readlines():
