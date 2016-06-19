@@ -5,16 +5,16 @@ POC of a network grapher
 
 Does stuff.
 
-"""
 
-import argparse
+"""
+# TODO add nmap support for host type
+# TODO add 'hosts' file for ip -> name support
+# NOTE: what about 'ghost' IPs or multicast/broadcast?
+
 import logging
 # import pprint
-import os
-import shutil
 
 import networkx as nx
-import pygraphviz as pgv
 
 import parsers
 from errors import MyException
@@ -27,8 +27,6 @@ logger.setLevel(logging.INFO)
 DEFAULT_SAVEFILE = "networkmap.dot"
 DEFAULT_GRAPHIMG = "/tmp/out.png"
 
-# TODO add nmap support for host type
-# TODO add 'hosts' file for ip -> name support
 SUPPORTED_DUMPFILES = [
     'arp',
     'route',
@@ -42,14 +40,8 @@ SUPPORTED_OS = [
 ]
 
 
-# NOTE: do we really need networkx? Can we do everything with pygraphviz?
-# https://github.com/pygraphviz/pygraphviz/blob/master/examples/simple.py
-# mmh maybe not - networkx can help traversing the graphs, finding dupes, etc.
-
 # using networkx:
 # https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
-
-# NOTE: what about 'ghost' IPs or multicast/broadcast?
 
 
 def extract_from_arp(dumpfile, dumpfile_os, ip):
@@ -137,108 +129,3 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
     # 3. traceroutes show paths (i.e. direct edges)
     final_graph = nx.union(loaded_graph, new_graph)
     return final_graph
-
-
-# see: http://stackoverflow.com/a/37578709/204634
-# but also: https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
-def load_graph(savefile):
-    """Does what it says on the tin(c)"""
-    # TODO how to start a new graph? or ignore the previous one
-    if os.path.exists(savefile):
-        g = nx.nx_agraph.read_dot(savefile)
-    else:
-        g = nx.Graph()
-    return g
-
-
-def save_graph(graph, savefile, force):
-    """Does what it says on the tin(c)"""
-    if os.path.exists(savefile) and not force:
-        shutil.copy(savefile, "{}.bak".format(savefile))
-        logger.info("Network DOT file backup saved: {}.bak".format(savefile))
-    nx.nx_agraph.write_dot(graph, savefile)
-    logger.info("Network DOT file saved to {}".format(savefile))
-
-
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument('-d', '--debug', action='store_true')
-
-    # TODO this can be a list, for multiple interfaces. That makes it fun to implement..
-    p.add_argument(
-        '-i', '--ip',
-        help=("The IP address where the dumpfile was taken. "
-              "Default: tries to guess bsaed on the content of the file")
-    )
-
-    p.add_argument(
-        '-s', '--savefile',
-        help="Use this file to store information. Creates it if it does not exist.",
-        default=DEFAULT_SAVEFILE
-    )
-    p.add_argument(
-        '-f', '--force', action='store_true',
-        # TODO this needs re-thinking
-        help="Overwrites the savefile without making a backup first"
-    )
-    p.add_argument('-n', '--dry-run', action='store_true')
-
-    # the dump file to load
-    p.add_argument('dumpfile')
-    # we'll try to guess, but can override
-    p.add_argument(
-        '-t', '--dumpfile-type',
-        help="Dumpfile type; default: tries to guess based on file format.",
-        choices=SUPPORTED_DUMPFILES
-    )
-    p.add_argument(
-        '-o', '--dumpfile-os',
-        help="Operating System; default: tries to guess.",
-        choices=SUPPORTED_OS
-    )
-
-    args = p.parse_args()
-
-    if args.debug:
-        logger.setLevel(logging.DEBUG)
-        logger.debug("Debug logging enabled")
-
-    savefile = args.savefile
-    if not os.path.exists(args.dumpfile):
-        raise SystemExit("File {} does not exist".format(args.dumpfile))
-
-    #
-    # Boilerplate ends
-    ###
-
-    loaded_graph = load_graph(savefile)
-    logger.debug("Loaded graph:\nnodes\t{}\nedges\t{}".format(loaded_graph.nodes(), loaded_graph.edges()))
-    try:
-        final_graph = grow_graph(
-            loaded_graph, args.dumpfile,
-            dumpfile_os=args.dumpfile_os,
-            dumpfile_type=args.dumpfile_type,
-            ip=args.ip
-        )
-        if not args.dry_run:
-            save_graph(final_graph, savefile, args.force)
-        else:
-            logger.info("Dry-run mode selected -not writing into savefile")
-    except MyException as e:
-        logger.error("Something went wrong: {}".format(e))
-        raise SystemExit
-
-    try:
-        # convert to image
-        f = pgv.AGraph(savefile)
-        f.layout(prog='circo')
-        f.draw(DEFAULT_GRAPHIMG)
-        logger.info("Output saved in {}".format(DEFAULT_GRAPHIMG))
-    except IOError as e:
-        logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually")
-
-    exit(0)
-
-
-if __name__ == '__main__':
-    main()

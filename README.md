@@ -17,21 +17,34 @@ Example:
    from A and B. Ideally with pretty icons
 
 
-Install
--------
+Installation
+------------
 
-Set up a virtualenv:
+Requirements:
 
-    virtualenv venv
-    source venv/bin/activate
+ * Graphviz
 
-Then install libgraphviz. For debian-based systems:
+To install:
+
+ 1. Set up a virtualenv:
+
+        virtualenv venv
+        source venv/bin/activate
+
+ 2. Install python graphviz bindings:
+
+ 2. Then install the required libraries:
+
+    pip install -r requirements.txt
+
+If you want to automatically generate graphs then you'll need pygraphviz
+installed. For debian-based systems:
 
     apt-get install pkg-config libgraphviz-dev graphviz-dev graphviz libgraphviz
 
-Then install the required libraries:
+For RPM based systems:
 
-    pip install -r requirements.txt
+    yum install graphviz graphviz-devel
 
 
 ### Errors when installing pygraphviz
@@ -54,7 +67,8 @@ Usage
 
 This command draws a simple graph from a windows ARP file dump:
 
-    python src/netgrapher.py samples/arp/windows_7_arp.txt  -t arp -o windows --force
+    # executes the __main__.py file into src/
+    python src/ samples/arp/windows_7_arp.txt  -t arp -o windows --force
 
 It's work in progress so you have to specify type and OS for now.
 
