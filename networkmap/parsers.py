@@ -9,19 +9,32 @@ from errors import MyException
 # netgrapher.py...
 logger = logging.getLogger('netgrapher')
 
+# NOTE there can be more than one way of matching; the regexps are applied to
+# all lines of the file until a match is found
 guess_data = (
     (('arp', 'windows'), r'^Interface:\s+'),
     (('arp', 'linux'), r'^Address\s+HWtype\s+HWaddress\s+Flags\s+Mask\s+Iface$'),
     (('arp', 'openbsd'), r'^Host\s+Ethernet\sAddress\s+Netif\sExpire\sFlags$'),
-    (('traceroute', 'linux'), r'^traceroute to .+ \([\d.]+\), \d+ hops max, \d+ byte packets$')
+    (('traceroute', 'linux'), r'^traceroute to .+ \([\d.]+\), \d+ hops max, \d+ byte packets$'),
+    # doubled, just because
+    (('route', 'linux'), r'^Kernel IP routing table$'),
+    (('route', 'linux'), r'^Destination\s+Gateway\s+Genmask\s+Flags\sMetric\sRef\s+Use\sIface$'),
 )
 
+# build separate lists for the help menu
+SUPPORTED_DUMPFILES = set(a[0] for a, b in guess_data)
+SUPPORTED_OS = set(a[1] for a, b in guess_data)
 
+
+# XXX perhaps this could be extended by using more than one regexp to match
+# across lines?
 def guess_dumpfile_type_and_os(dumpfile):
     """Returns file_type, os when any line of the input file matches the regexp"""
     with open(dumpfile) as f:
+        # read every line exactly once
         for line in f.readlines():
             logger.debug("line:\n{}".format(line))
+            # ...and try to match it against a known os/type tuple
             for type_os, regexp in guess_data:
                 m = re.match(regexp, line)
                 if m:

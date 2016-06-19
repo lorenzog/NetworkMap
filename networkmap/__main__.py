@@ -16,7 +16,8 @@ import shutil
 import networkx as nx
 
 from errors import MyException
-from netgrapher import grow_graph, SUPPORTED_DUMPFILES, SUPPORTED_OS
+from netgrapher import grow_graph
+from parsers import SUPPORTED_OS, SUPPORTED_DUMPFILES
 from node import Node
 
 

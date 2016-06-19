@@ -5,6 +5,7 @@ import sys
 
 from parsers import guess_dumpfile_type_and_os as guess
 
+# hat tip: http://stackoverflow.com/a/7483862/204634
 logger = logging.getLogger('netgrapher')
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
@@ -17,6 +18,7 @@ SAMPLES_DIR = os.path.join(
 
 arp_dir = os.path.join(SAMPLES_DIR, 'arp')
 tr_dir = os.path.join(SAMPLES_DIR, 'traceroute')
+route_dir = os.path.join(SAMPLES_DIR, 'route')
 
 
 class TestArp(object):
@@ -44,4 +46,12 @@ class TestTraceroute(object):
         dumpfile = os.path.join(tr_dir, 'linux_traceroute.txt')
         _t, _o = guess(dumpfile)
         assert _t == 'traceroute'
+        assert _o == 'linux'
+
+
+class TestRoute(object):
+    def test_guess_linux(self):
+        dumpfile = os.path.join(route_dir, 'linux_route.txt')
+        _t, _o = guess(dumpfile)
+        assert _t == 'route'
         assert _o == 'linux'

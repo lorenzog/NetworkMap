@@ -27,19 +27,6 @@ logger.setLevel(logging.INFO)
 DEFAULT_SAVEFILE = "networkmap.dot"
 DEFAULT_GRAPHIMG = "/tmp/out.png"
 
-SUPPORTED_DUMPFILES = [
-    'arp',
-    'route',
-    'traceroute',
-]
-
-SUPPORTED_OS = [
-    'windows',
-    'linux',
-    'openbsd'
-]
-
-
 # using networkx:
 # https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
 
@@ -51,7 +38,7 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
     elif dumpfile_os == 'linux':
         centre_node, neighbours = parsers.parse_linux_arp(dumpfile, ip)
     else:
-        raise NotImplementedError("Sorry dude")
+        raise NotImplementedError("Sorry, haven't written this yet")
 
     g = nx.Graph()
     for node in neighbours:
@@ -116,11 +103,6 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
             logger.warn("Guessed type does not match specified type. Ignoring guess.")
 
     logger.debug("Dumpfile: {}, OS: {}".format(dumpfile_type, dumpfile_os))
-
-    if dumpfile_type not in SUPPORTED_DUMPFILES:
-        raise MyException("Invalid dumpfile type")
-    if dumpfile_os not in SUPPORTED_OS:
-        raise MyException("Invalid OS")
 
     if dumpfile_type == 'arp':
         new_graph = extract_from_arp(dumpfile, dumpfile_os, ip)
