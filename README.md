@@ -17,6 +17,38 @@ Example:
    from A and B. Ideally with pretty icons
 
 
+Install
+-------
+
+Set up a virtualenv:
+
+    virtualenv venv
+    source venv/bin/activate
+
+Then install libgraphviz. For debian-based systems:
+
+    apt-get install pkg-config libgraphviz-dev graphviz-dev graphviz libgraphviz
+
+Then install the required libraries:
+
+    pip install -r requirements.txt
+
+
+### Errors when installing pygraphviz
+
+If you get a similar error:
+
+ File "/home/user/dev/NetworkMap/venv/local/lib/python2.7/site-packages/pygraphviz/graphviz.py", line 24, in swig_import_helper
+     _mod = imp.load_module('_graphviz', fp, pathname, description)
+     ImportError: /home/user/dev/NetworkMap/venv/local/lib/python2.7/site-packages/pygraphviz/_graphviz.so: undefined symbol: Agundirected
+
+Then fix it like that:
+
+    pip uninstall graphviz
+    pip install pygraphviz --install-option="--include-path=/usr/include/graphviz" --install-option="--library-path=/usr/lib/graphviz/"
+
+Source: http://stackoverflow.com/questions/32885486/pygraphviz-importerror-undefined-symbol-agundirected
+
 Usage
 -----
 
