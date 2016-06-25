@@ -1,6 +1,6 @@
 decorator
 networkx
 pydotplus
-pygraphviz
+# pygraphviz
 pyparsing
 nose

@@ -34,17 +34,32 @@ DEFAULT_GRAPHIMG = "/tmp/out.png"
 def extract_from_arp(dumpfile, dumpfile_os, ip):
     """Given an arp dump, extracts IPs and adds them as nodes to the graph"""
     if dumpfile_os == 'windows':
+        # windows arp contains local ip
         centre_node, neighbours = parsers.parse_windows_arp(dumpfile, ip)
+        # so we can verify it matches the supplied IP (if any)
+        if ip is not None and centre_node != ip:
+            raise MyException(
+                "The IP found in the ARP file is {} but "
+                "you supplied {}. Aborting...".format(
+                    centre_node, ip)
+            )
     elif dumpfile_os == 'linux':
-        centre_node, neighbours = parsers.parse_linux_arp(dumpfile, ip)
+        if ip is None:
+            raise MyException(
+                "Linux ARP does not contain the IP of the "
+                "centre node; please supply it manually\n")
+        centre_node = ip
+        neighbours = parsers.parse_linux_arp(dumpfile)
     else:
         raise NotImplementedError("Sorry, haven't written this yet")
 
     g = nx.Graph()
     for node in neighbours:
-        g.add_edge(centre_node, node, source="arp")
+        _node_ip, _node_mac = node
+        g.add_node(_node_ip, mac=_node_mac)
+        g.add_edge(centre_node, _node_ip, source="arp")
 
-    logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(), g.edges()))
+    logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(data=True), g.edges(data=True)))
     return g
 
 
@@ -133,5 +148,8 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
     # 2. routes can give hosts that are not immediately adjacent. In this case,
     # they should not be added as direct edges when growing the graph.
     # 3. traceroutes show paths (i.e. direct edges)
+    logger.debug("Loaded graph nodes {}\nedges {}".format(loaded_graph.nodes(data=True), loaded_graph.edges(data=True)))
+    logger.debug("New graph nodes {}\nedges {}".format(new_graph.nodes(data=True), new_graph.edges(data=True)))
+    # final_graph = nx.disjoint_union(loaded_graph, new_graph)
     final_graph = nx.union(loaded_graph, new_graph)
     return final_graph

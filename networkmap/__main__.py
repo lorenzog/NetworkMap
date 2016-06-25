@@ -19,7 +19,7 @@ import networkx as nx
 from errors import MyException
 from netgrapher import grow_graph
 from parsers import SUPPORTED_OS, SUPPORTED_DUMPFILES
-from node import Node
+# from node import Node
 
 
 logger = logging.getLogger('netgrapher')
@@ -32,7 +32,7 @@ SUPPORTED_FILE_FORMATS = [
     'DOT',
     'JSON'
 ]
-DEFAULT_FILE_FORMAT = 'DOT'
+DEFAULT_FILE_FORMAT = 'GEXF'
 
 # TODO json format looks promising when interacting with d3:
 # http://bl.ocks.org/mbostock/4062045
@@ -53,7 +53,7 @@ def load_graph(savefile, file_format):
             from xml.etree.ElementTree import ParseError as ParseError
 
             try:
-                g = nx.read_gexf(savefile, node_type=Node)
+                g = nx.read_gexf(savefile)
             # I hate catching 'Exception' but read_gexf raises
             # 'cElementTree.ParseError' (or ElementTree.ParseError, no 'c')
             # which is nowhere to be found
@@ -63,12 +63,19 @@ def load_graph(savefile, file_format):
                 raise MyException("Cannot read file {} using format {}: {}".format(
                     savefile, file_format, e))
         elif file_format == 'DOT':
-            g = nx.nx_agraph.read_dot(savefile)
+            import pygraphviz
+            try:
+                g = nx.nx_agraph.read_dot(savefile)
+            except pygraphviz.agraph.DotError as e:
+                logger.error("Cannot load file {}".format(savefile))
+                raise MyException(e)
         elif file_format == 'JSON':
             from networkx.readwrite import json_graph
             with open(savefile) as f:
                 json_data = json.load(f)
             g = json_graph.node_link_graph(json_data)
+            logger.debug("Loaded JSON savefile. Nodes: {}".format(
+                g.nodes(data=True)))
         else:
             raise MyException("Unknown file format {}".format(file_format))
     else:
@@ -92,7 +99,7 @@ def save_graph(graph, savefile, file_format):
         json_data = json_graph.node_link_data(graph)
         with open(savefile, 'w') as f:
             # f.write(json_data)
-            json.dump(json_data, f)
+            json.dump(json_data, f, indent=4)
     else:
         logger.error("Unknown file format requested")
 
@@ -152,10 +159,11 @@ def main():
     ###
 
     try:
-        logger.debug("About to load file {}".format(savefile))
         if args.ignore_savefile:
+            logger.debug("Ignoring savefile")
             _savefile = None
         else:
+            logger.debug("About to load file {}".format(savefile))
             _savefile = savefile
         loaded_graph = load_graph(_savefile, args.file_format)
         logger.debug("Loaded graph:\nnodes\t{}\nedges\t{}".format(loaded_graph.nodes(), loaded_graph.edges()))
