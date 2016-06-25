@@ -73,6 +73,7 @@ def extract_from_tr(dumpfile, dumpfile_os, ip):
         # returns an (ordered!) list of nodes, where the first is the centre node
         hops = parsers.parse_linux_tr(dumpfile, ip)
     else:
+        # TODO windows traceroute
         raise NotImplementedError("Sorry, haven't written this yet")
 
     g = nx.Graph()

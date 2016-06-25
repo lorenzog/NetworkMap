@@ -7,11 +7,10 @@ class Node(object):
         # OS?
 
     def __repr__(self):
-        # FIXME should actually be a python expression able to generate
-        # this same object i.e. Node(ip, mac)
-        _ret = "Node IP: {}".format(self.ip)
+        _ret = "Node(ip='{}'".format(self.ip)
         if self.mac:
-            _ret += " [mac: {}]".format(self.mac)
+            _ret += ", mac='{}'".format(self.mac)
+        _ret += ")"
         return _ret
 
     def __eq__(self, other):
@@ -21,3 +20,6 @@ class Node(object):
 
         # no mac address specified or one is undefined - we compare by IP
         return self.ip == self.other.ip
+
+# TODO
+# Nodes should be referenced by an incremental ID, not an object?

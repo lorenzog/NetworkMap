@@ -9,6 +9,7 @@ Does stuff.
 """
 import argparse
 import logging
+import json
 # import pprint
 import os
 import shutil
@@ -28,7 +29,8 @@ DEFAULT_GRAPHIMG = "/tmp/out.png"
 
 SUPPORTED_FILE_FORMATS = [
     'GEXF',
-    'DOT'
+    'DOT',
+    'JSON'
 ]
 DEFAULT_FILE_FORMAT = 'DOT'
 
@@ -40,6 +42,9 @@ DEFAULT_FILE_FORMAT = 'DOT'
 # but also: https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
 def load_graph(savefile, file_format):
     """Does what it says on the tin(c)"""
+    if savefile is None:
+        return nx.Graph()
+
     if os.path.exists(savefile):
         if file_format == 'GEXF':
             # importing here because if there's no xml.etree installed,
@@ -59,9 +64,15 @@ def load_graph(savefile, file_format):
                     savefile, file_format, e))
         elif file_format == 'DOT':
             g = nx.nx_agraph.read_dot(savefile)
+        elif file_format == 'JSON':
+            from networkx.readwrite import json_graph
+            with open(savefile) as f:
+                json_data = json.load(f)
+            g = json_graph.node_link_graph(json_data)
         else:
             raise MyException("Unknown file format {}".format(file_format))
     else:
+        logger.info("Savefile not found - initialising new graph...")
         g = nx.Graph()
     return g
 
@@ -76,6 +87,12 @@ def save_graph(graph, savefile, file_format):
         nx.write_gexf(graph, savefile)
     elif file_format == 'DOT':
         nx.nx_agraph.write_dot(graph, savefile)
+    elif file_format == 'JSON':
+        from networkx.readwrite import json_graph
+        json_data = json_graph.node_link_data(graph)
+        with open(savefile, 'w') as f:
+            # f.write(json_data)
+            json.dump(json_data, f)
     else:
         logger.error("Unknown file format requested")
 
@@ -98,6 +115,14 @@ def main():
         help="Use this file to store information. Creates it if it does not exist.",
         default=DEFAULT_SAVEFILE
     )
+    # savefile format
+    p.add_argument(
+        '-f', '--file-format', choices=SUPPORTED_FILE_FORMATS,
+        default=DEFAULT_FILE_FORMAT)
+    p.add_argument(
+        '-N', '--ignore-savefile', action='store_true',
+        help="Don't read the savefile")
+
     p.add_argument('-n', '--dry-run', action='store_true')
 
     # the dump file to load
@@ -111,9 +136,6 @@ def main():
         '-o', '--dumpfile-os',
         help="Operating System; default: tries to guess.",
         choices=SUPPORTED_OS)
-    p.add_argument(
-        '-f', '--file-format', choices=SUPPORTED_FILE_FORMATS,
-        default=DEFAULT_FILE_FORMAT)
 
     args = p.parse_args()
 
@@ -131,7 +153,11 @@ def main():
 
     try:
         logger.debug("About to load file {}".format(savefile))
-        loaded_graph = load_graph(savefile, args.file_format)
+        if args.ignore_savefile:
+            _savefile = None
+        else:
+            _savefile = savefile
+        loaded_graph = load_graph(_savefile, args.file_format)
         logger.debug("Loaded graph:\nnodes\t{}\nedges\t{}".format(loaded_graph.nodes(), loaded_graph.edges()))
         final_graph = grow_graph(
             loaded_graph, args.dumpfile,
