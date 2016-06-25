@@ -152,6 +152,8 @@ def main():
         help="Operating System; default: tries to guess.",
         choices=SUPPORTED_OS)
 
+    # run a http server?
+    p.add_argument('-H', '--serve_http', action='store_true')
     args = p.parse_args()
 
     if args.debug:
@@ -204,7 +206,22 @@ def main():
         except IOError as e:
             logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually (e.g. neato, circo)")
 
-    logger.info("Open in web page: run\n\tpython -m SimpleHTTPServer\nand point your browser to http://localhost:8000/")
+    if args.serve_http:
+        import SimpleHTTPServer
+        import SocketServer
+
+        PORT = 8000
+
+        Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+
+        httpd = SocketServer.TCPServer(("", PORT), Handler)
+
+        print "serving at port", PORT
+        httpd.serve_forever()
+
+    else:
+        logger.info("Open in web page: run\n\tpython -m SimpleHTTPServer\nand point your browser to http://localhost:8000/")
+
     exit(0)
 
 

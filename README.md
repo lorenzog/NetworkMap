@@ -31,9 +31,6 @@ To install:
 
     pip install -r requirements.txt
 
- 3. (work in progress) use the `networkmap.json` file with a library like d3 to
-    visualise the outcome
-
 
 Optional requirements:
 
@@ -51,6 +48,16 @@ You are not limited to one sample:
 
     # note that with traceroute you need to specify the IP of the host
     python networkmap samples/traceroute/linux_traceroute.txt --ip 1.2.3.4
+
+To run Python's SimpleHTTPServer, use the `-H` switch:
+
+    python networkmap samples/arp/linux_arp.txt --ip 1.2.3.4 -H
+
+Then point your browser to http://localhost:8000
+
+Alternatively, from the command-prompt use:
+
+    python -m SimpleHTTPServer
 
 
 
