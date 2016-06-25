@@ -143,6 +143,12 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
         # this bubbles to the user for now
         raise NotImplementedError("This dumpfile is not supported.")
 
+    ###
+    # XXX
+    # how about:
+    # join the two graphs as independent networks
+    # but make the centre the same node (?)
+
     # NOTE:
     # 1. arp tables give immediate neighbours so can add an edge.
     # 2. routes can give hosts that are not immediately adjacent. In this case,
@@ -151,5 +157,6 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
     logger.debug("Loaded graph nodes {}\nedges {}".format(loaded_graph.nodes(data=True), loaded_graph.edges(data=True)))
     logger.debug("New graph nodes {}\nedges {}".format(new_graph.nodes(data=True), new_graph.edges(data=True)))
     # final_graph = nx.disjoint_union(loaded_graph, new_graph)
-    final_graph = nx.union(loaded_graph, new_graph)
+    # final_graph = nx.union(loaded_graph, new_graph)
+    final_graph = nx.compose(loaded_graph, new_graph)
     return final_graph

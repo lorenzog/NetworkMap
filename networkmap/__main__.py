@@ -24,13 +24,14 @@ from parsers import SUPPORTED_OS, SUPPORTED_DUMPFILES
 
 logger = logging.getLogger('netgrapher')
 
-DEFAULT_SAVEFILE = "networkmap.dot"
+DEFAULT_SAVEFILE = "networkmap"
 DEFAULT_GRAPHIMG = "/tmp/out.png"
 
 SUPPORTED_FILE_FORMATS = [
     'GEXF',
     'DOT',
-    'JSON'
+    'JSON',
+    'GRAPHML',
 ]
 DEFAULT_FILE_FORMAT = 'GEXF'
 
@@ -44,7 +45,6 @@ def load_graph(savefile, file_format):
     """Does what it says on the tin(c)"""
     if savefile is None:
         return nx.Graph()
-
     if os.path.exists(savefile):
         if file_format == 'GEXF':
             # importing here because if there's no xml.etree installed,
@@ -66,6 +66,8 @@ def load_graph(savefile, file_format):
             import pygraphviz
             try:
                 g = nx.nx_agraph.read_dot(savefile)
+            except ImportError:
+                raise MyException("Cannot find pygraphviz")
             except pygraphviz.agraph.DotError as e:
                 logger.error("Cannot load file {}".format(savefile))
                 raise MyException(e)
@@ -76,6 +78,9 @@ def load_graph(savefile, file_format):
             g = json_graph.node_link_graph(json_data)
             logger.debug("Loaded JSON savefile. Nodes: {}".format(
                 g.nodes(data=True)))
+        elif file_format == 'GRAPHML':
+            from networkx.readwrite import graphml
+            g = graphml.read_graphml(savefile)
         else:
             raise MyException("Unknown file format {}".format(file_format))
     else:
@@ -100,6 +105,9 @@ def save_graph(graph, savefile, file_format):
         with open(savefile, 'w') as f:
             # f.write(json_data)
             json.dump(json_data, f, indent=4)
+    elif file_format == 'GRAPHML':
+        from networkx.readwrite import graphml
+        graphml.write_graphml(graph, savefile)
     else:
         logger.error("Unknown file format requested")
 
@@ -150,7 +158,8 @@ def main():
         logger.setLevel(logging.DEBUG)
         logger.debug("Debug logging enabled")
 
-    savefile = args.savefile
+    savefile = "{}{}{}".format(args.savefile, os.path.extsep, args.file_format.lower())
+
     if not os.path.exists(args.dumpfile):
         raise SystemExit("File {} does not exist".format(args.dumpfile))
 
@@ -190,7 +199,7 @@ def main():
             f.draw(DEFAULT_GRAPHIMG)
             logger.info("Graph image saved in {}".format(DEFAULT_GRAPHIMG))
         except ImportError as e:
-            logger.debug("Cannot find pygraphviz.")
+            logger.error("Cannot find pygraphviz.")
         except IOError as e:
             logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually (e.g. neato, circo)")
 
