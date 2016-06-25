@@ -158,5 +158,7 @@ def grow_graph(loaded_graph, dumpfile, dumpfile_os=None, dumpfile_type=None, ip=
     logger.debug("New graph nodes {}\nedges {}".format(new_graph.nodes(data=True), new_graph.edges(data=True)))
     # final_graph = nx.disjoint_union(loaded_graph, new_graph)
     # final_graph = nx.union(loaded_graph, new_graph)
+    # thanks, stack overflow
+    # http://stackoverflow.com/a/32697415/204634
     final_graph = nx.compose(loaded_graph, new_graph)
     return final_graph

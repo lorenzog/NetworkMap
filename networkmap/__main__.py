@@ -190,6 +190,7 @@ def main():
         logger.error("{}".format(e))
         raise SystemExit
 
+    # as a freebie, make a graph already if it's a dot file
     if args.file_format == 'DOT':
         try:
             import pygraphviz as pgv
