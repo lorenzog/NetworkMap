@@ -204,23 +204,32 @@ def main():
         except ImportError as e:
             logger.error("Cannot find pygraphviz.")
         except IOError as e:
-            logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually (e.g. neato, circo)")
+            logger.error(
+                "Something went wrong when drawing, but the dot file is "
+                "still good. Try one of the graphviz programs manually "
+                "(e.g. neato, circo)")
 
     if args.serve_http:
         import SimpleHTTPServer
         import SocketServer
 
         PORT = 8000
-
         Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+        # how about we don't use 0.0.0.0 and avoid serving the local directory
+        # to the entire world, eh
+        httpd = SocketServer.TCPServer(("127.0.0.1", PORT), Handler)
 
-        httpd = SocketServer.TCPServer(("", PORT), Handler)
-
-        print "serving at port", PORT
-        httpd.serve_forever()
+        logger.info("Point your browser at http://localhost:{}".format(PORT))
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            logger.info("Shutting down web server...")
 
     else:
-        logger.info("Open in web page: run\n\tpython -m SimpleHTTPServer\nand point your browser to http://localhost:8000/")
+        logger.info(
+            "To show the output in a web browser, use the '-H' switch or "
+            "run \n\tpython -m SimpleHTTPServer\nand point your browser to "
+            "http://localhost:8000/")
 
     exit(0)
 
