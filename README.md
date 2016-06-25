@@ -31,6 +31,9 @@ To install:
 
     pip install -r requirements.txt
 
+ 3. (work in progress) use the `networkmap.json` file with a library like d3 to
+    visualise the outcome
+
 
 Optional requirements:
 

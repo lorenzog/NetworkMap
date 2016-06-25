@@ -204,6 +204,7 @@ def main():
         except IOError as e:
             logger.error("Something went wrong when drawing, but the dot file is good. Try one of the graphviz programs manually (e.g. neato, circo)")
 
+    logger.info("Open in web page: run\n\tpython -m SimpleHTTPServer\nand point your browser to http://localhost:8000/")
     exit(0)
 
 
