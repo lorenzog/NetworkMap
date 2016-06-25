@@ -20,10 +20,6 @@ Example:
 Installation
 ------------
 
-Requirements:
-
- * Graphviz (see below for minimal instructions)
-
 To install:
 
  1. Set up a virtualenv:
@@ -36,22 +32,23 @@ To install:
     pip install -r requirements.txt
 
 
+Optional requirements:
+
+ * Graphviz (see below for minimal instructions)
+
+
 Usage
 -----
 
 This command draws a simple graph from a windows ARP file dump:
 
     python networkmap samples/arp/windows_7_arp.txt
-    # then look at the sample:
-    geeqie /tmp/out.png
 
 You are not limited to one sample:
 
     # note that with traceroute you need to specify the IP of the host
     python networkmap samples/traceroute/linux_traceroute.txt --ip 1.2.3.4
-    geeqie /tmp/out.png
 
-It's work in progress so you have to specify type and OS for now.
 
 
 ### Installing GraphViz
@@ -97,25 +94,9 @@ Possible alternatives
 
 P2NMAP (it's a book, comes with source code): https://python-forensics.org/p2nmap/
 
-Design blurb
-------------
+#### Future:
 
- 1. Write a python parsing tool able to digest windows route dumps, linux route dumps, etc.
-    * Must be able to recognise dupes, specify nearest-neighbours
-    * CIDRize to parse IPs? https://pypi.python.org/pypi/cidrize/
- 2. Use a graph library to set up the data structure. Candidates:
-    * igraph http://igraph.org/python/
-    * networkX https://networkx.readthedocs.io/en/stable/index.html
-    * graphviz (pydot or python's graphviz module): http://graphviz.readthedocs.io/en/latest/
-    * graph-tool: https://graph-tool.skewed.de/
-    * pygraphviz (seems related to networkX - no clean install?)
- 3. Dump into SVG or any image format
- 4. ...
- 5. Profit!
-
-Future:
-
- * Dump into Excel spreadsheet or SQL database
+ * Dump into Excel spreadsheet or SQL database?
  * Import into Microsoft Visio? https://support.office.com/en-gb/article/Create-a-detailed-network-diagram-by-using-external-data-in-Visio-Professional-1d43d1a0-e1ac-42bf-ad32-be436411dc08#bm2
 
 Misc notes

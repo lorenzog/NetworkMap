@@ -33,7 +33,7 @@ SUPPORTED_FILE_FORMATS = [
     'JSON',
     'GRAPHML',
 ]
-DEFAULT_FILE_FORMAT = 'GEXF'
+DEFAULT_FILE_FORMAT = 'JSON'
 
 # TODO json format looks promising when interacting with d3:
 # http://bl.ocks.org/mbostock/4062045
