@@ -5,26 +5,27 @@ The purpose of this tool is to produce a network diagram by collating network in
 
 Example:
 
- * Compromise host A
- * Dump the routing table, ARP table
- * Feed the dumps into this tool by copy-pasting into text files
- * Pivot on host B
- * Dump tables
- * Feed tables
- * ...rinse, repeat
+ * Log on host A as any user
+ * Dump some network information e.g. routing table, ARP table, traceroute
+ * Feed the dumps to this tool
+ * Go to another host
+ * Dump network information
+
+...rinse, repeat
 
  * Ultimately, this tool produces a network diagram showing all hosts reachable
-   from A and B
+   from your compromised nodes.
 
 Result (work in progress, but you get the idea):
 
 ![Sample screenshot](simplenetwork.png?raw=true "Simple Network Example")
 
+Please note that this is WORK IN PROGRESS and it needs some work to parse e.g. routing tables, etc. If you feel like helping, please take a look [here](https://github.com/xpn/NetworkMap/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 Installation
 ------------
 
-To install:
+You'll need a fairly recent Python version with setuptools.
 
  1. Set up a virtualenv:
 
@@ -33,31 +34,36 @@ To install:
 
  2. Install the required libraries:
 
-    pip install -r requirements.txt
+        pip install -r requirements.txt
 
 
 Usage
 -----
 
-This command draws a simple graph from a windows ARP file dump:
+Run the tool passing the path of a network dump on the command line:
 
     python networkmap samples/arp/windows_7_arp.txt
 
-You are not limited to one sample:
+Then every subsequent run will grow the knowledge about the network (saved into the `networkmap.json` file).
 
     # note that with traceroute you need to specify the IP of the host
     python networkmap samples/traceroute/linux_traceroute.txt --ip 1.2.3.4
 
-To run Python's SimpleHTTPServer, use the `-H` switch:
+#### How to see the result
 
-    python networkmap samples/arp/linux_arp.txt --ip 1.2.3.4 -H
+Two methods:
 
-Then point your browser to http://localhost:8000
+ 1. Use the `-H` switch to automatically run Python's `SimpleHTTPServer` after each successful run (don't forget to point your browser to `http://localhost:8000`):
 
-Alternatively, from the command-prompt use:
+        python networkmap samples/arp/linux_arp.txt --ip 1.2.3.4 -H
+
+Or,
+
+ 2. If you just want to serve the content of this directory use this command:
 
     python -m SimpleHTTPServer
 
+**WARNING** don't run the second method on an untrusted network as it will serve **the entire content of the local directory** to **ANYONE** as it listens to 0.0.0.0 rather than 127.0.0.1.
 
 
 ### Installing GraphViz
@@ -111,9 +117,6 @@ P2NMAP (it's a book, comes with source code): https://python-forensics.org/p2nma
 Misc notes
 ----------
 
-To keep in mind:
-
  * Graphviz can also do clustering? http://www.graphviz.org/Gallery/undirected/gd_1994_2007.html
  * Graphviz and network maps (icons are a bit ugly tho): http://www.graphviz.org/Gallery/undirected/networkmap_twopi.html
  * For manual graphs (meh) - requires probably generating an output properly formatted like XML. Pain to maintain: https://community.spiceworks.com/topic/521280-i-need-software-that-make-my-whole-network-diagram-automatically
- * JSON seems to be a good way to go: https://networkx.readthedocs.io/en/stable/reference/readwrite.json_graph.html combined with d3: https://github.com/d3/d3/wiki/Tutorials to produce something like http://bl.ocks.org/mbostock/4062045

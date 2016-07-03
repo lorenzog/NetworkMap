@@ -29,7 +29,7 @@ SUPPORTED_OS = set(a[1] for a, b in guess_data)
 
 
 # XXX perhaps this could be extended by using more than one regexp to match
-# across lines?
+# across lines? Maybe using a defaultDict with a list of regexps instead of tuples
 def guess_dumpfile_type_and_os(dumpfile):
     """Returns file_type, os when any line of the input file matches the regexp"""
     with open(dumpfile) as f:
@@ -111,3 +111,18 @@ def parse_windows_arp(dumpfile, ip):
 
     # centre node and neighbours
     return _local_ip, nodes
+
+
+def parse_linux_route(dumpfile):
+    # NOTE from 'route' man page:
+    #       Flags  Possible flags include
+    #           U (route is up)
+    #           H (target is a host)
+    #           G (use gateway)
+    #           R (reinstate route for dynamic routing)
+    #           D (dynamically installed by daemon or redirect)
+    #           M (modified from routing daemon or redirect)
+    #           A (installed by addrconf)
+    #           C (cache entry)
+    #           !  (reject route)
+    pass

@@ -49,21 +49,30 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
 
 
 def extract_from_route(dumpfile, dumpfile_os, ip):
-    # TODO
+    if dumpfile_os == 'linux':
+        host_routes, network_routes, default_route = parsers.parse_linux_route(dumpfile)
+    else:
+        # TODO
+        raise NotImplementedError("Sorry, haven't written this yet")
 
-    # NOTE from 'route' man page:
-    #       Flags  Possible flags include
-    #           U (route is up)
-    #           H (target is a host)
-    #           G (use gateway)
-    #           R (reinstate route for dynamic routing)
-    #           D (dynamically installed by daemon or redirect)
-    #           M (modified from routing daemon or redirect)
-    #           A (installed by addrconf)
-    #           C (cache entry)
-    #           !  (reject route)
+    g = nx.Graph()
+    for node in default_route:
+        # TODO
+        # add the default route as direct neighbour to the graph, with
+        # an edge leading to a 'default' network/internet.
+        pass
+    for node in network_routes:
+        # TODO
+        # Then add all network routes as edges to other networks, using the
+        # gateway if present;
+        pass
+    for node in host_routes:
+        # TODO
+        # Lastly, add all host routes as edges *through* either a network route or
+        # a default route. Not sure whether I'll have to parse IPs to understand this.
+        pass
 
-    raise NotImplementedError("Sorry, haven't written this yet")
+    return g
 
 
 def extract_from_tr(dumpfile, dumpfile_os, ip):
