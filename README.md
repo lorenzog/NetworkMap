@@ -16,6 +16,10 @@ Example:
  * Ultimately, this tool produces a network diagram showing all hosts reachable
    from A and B. Ideally with pretty icons
 
+Result:
+
+![Sample screenshot](/simplenetwork.png?raw=true "Simple Network Example")
+
 
 Installation
 ------------
