@@ -2,6 +2,7 @@
 # TODO add 'hosts' file for ip -> name support
 # NOTE: what about 'ghost' IPs or multicast/broadcast?
 # TODO add support for multi-interface
+# TODO to supply IP of host, perhaps use an ipconfig/ifconfig file? (useful for route parsing)
 
 import logging
 
@@ -41,8 +42,8 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
     g = nx.Graph()
     for node in neighbours:
         _node_ip, _node_mac = node
-        g.add_node(_node_ip, mac=_node_mac)
-        g.add_edge(centre_node, _node_ip, source="arp")
+        g.add_node(_node_ip, ip_addr=_node_ip, mac=_node_mac)
+        g.add_edge(centre_node, _node_ip, link_type="arp")
 
     logger.debug("Local graph:\nnodes\t{}\nedges\t{}".format(g.nodes(data=True), g.edges(data=True)))
     return g
@@ -50,6 +51,10 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
 
 def extract_from_route(dumpfile, dumpfile_os, ip):
     if dumpfile_os == 'linux':
+        if ip is None:
+            raise MyException(
+                "Linux ARP does not contain the IP of the "
+                "centre node; please supply it manually\n")
         # host and network routes have the form: (destination, netmask, gateway)
         # default routes is an IP
         host_routes, network_routes, default_route = parsers.parse_linux_route(dumpfile)
@@ -58,16 +63,27 @@ def extract_from_route(dumpfile, dumpfile_os, ip):
         raise NotImplementedError("Sorry, haven't written this yet")
 
     g = nx.Graph()
+    # add current
+    g.add_node(ip, ip_addr=ip)
+
     for dr in default_route:
         # add the default route as direct neighbour to the graph, with
         # an edge leading to a 'default' network/internet.
-        g.add_node(dr)
-        g.add_edge(ip, dr, source="default_route")
-    for node in network_routes:
-        # TODO
-        # Then add all network routes as edges to other networks, using the
-        # gateway if present;
-        pass
+        g.add_node(dr, ip_addr=dr, node_type="default_gateway")
+        g.add_edge(ip, dr, link_type="default_route")
+    for nr in network_routes:
+        _network, _mask, _gw = nr
+        # Then add all network routes as edges to other networks
+        g.add_node(_network, netmask=_mask, node_type="network")
+        if _gw != '0.0.0.0':
+            # using the gateway if present;
+            g.add_node(_gw, node_type="network_gateway")
+            g.add_edge(ip, _gw, link_type="network_route")
+            # XXX this could be a link through several networks
+            g.add_edge(_gw, _network, link_type="network_link")
+        else:
+            # or simply as a network route
+            g.add_edge(ip, _network, link_type="network_route")
     for node in host_routes:
         # TODO
         # Lastly, add all host routes as edges *through* either a network route or
@@ -94,7 +110,7 @@ def extract_from_tr(dumpfile, dumpfile_os, ip):
 
     # link each node with the preceding one
     for hopno, node in enumerate(hops[1:]):
-        g.add_edge(hops[hopno], node, source="traceroute")
+        g.add_edge(hops[hopno], node, link_type="traceroute")
 
     return g
 

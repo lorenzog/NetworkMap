@@ -131,6 +131,15 @@ def parse_linux_route(dumpfile):
 
     with open(dumpfile) as f:
         for line in f.readlines():
+            # skip first line
+            m = re.match(r'Kernel IP routing table', line)
+            if m is not None:
+                continue
+            # skip second line
+            m = re.match(r"Destination\s+Gateway\s+Genmask", line)
+            if m is not None:
+                continue
+
             # regexp to match an IP: ([\w.]+)
             # Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
             # 0.0.0.0         10.137.4.1      0.0.0.0         UG    0      0        0 eth0
@@ -158,8 +167,8 @@ def parse_linux_route(dumpfile):
                     host_routes.append(_hr)
                     continue
 
-                # must be a network route
-                # TODO skip routes with mask of 0xff -- they're broadcast
+                # what's left must be a network route
+                # TODO bar the odd cases like ! -- see notes on top of function
                 _nr = (_dest, _mask, _gw)
                 logger.debug("Adding network route: {}".format(_nr))
                 network_routes.append(_nr)
