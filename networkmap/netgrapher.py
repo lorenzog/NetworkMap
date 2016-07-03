@@ -50,17 +50,19 @@ def extract_from_arp(dumpfile, dumpfile_os, ip):
 
 def extract_from_route(dumpfile, dumpfile_os, ip):
     if dumpfile_os == 'linux':
+        # host and network routes have the form: (destination, netmask, gateway)
+        # default routes is an IP
         host_routes, network_routes, default_route = parsers.parse_linux_route(dumpfile)
     else:
         # TODO
         raise NotImplementedError("Sorry, haven't written this yet")
 
     g = nx.Graph()
-    for node in default_route:
-        # TODO
+    for dr in default_route:
         # add the default route as direct neighbour to the graph, with
         # an edge leading to a 'default' network/internet.
-        pass
+        g.add_node(dr)
+        g.add_edge(ip, dr, source="default_route")
     for node in network_routes:
         # TODO
         # Then add all network routes as edges to other networks, using the

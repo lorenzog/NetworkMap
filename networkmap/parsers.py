@@ -125,4 +125,44 @@ def parse_linux_route(dumpfile):
     #           A (installed by addrconf)
     #           C (cache entry)
     #           !  (reject route)
-    pass
+    host_routes = []
+    network_routes = []
+    default_routes = []
+
+    with open(dumpfile) as f:
+        for line in f.readlines():
+            # regexp to match an IP: ([\w.]+)
+            # Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+            # 0.0.0.0         10.137.4.1      0.0.0.0         UG    0      0        0 eth0
+            m = re.match(r'(?P<dest>[\w.]+)\s+(?P<gw>[\w.]+)\s+(?P<mask>[\w.]+)\s+(?P<flags>[\w.]+)', line)
+            if m is not None:
+                _dest = m.group('dest')
+                _gw = m.group('gw')
+                _mask = m.group('mask')
+                _flags = m.group('flags')
+
+                if _flags[0] != 'U':
+                    logger.debug("Route {} is not up; skipping...".format(line))
+
+                # basic example, I'm sure it breaks in the face of some complex scenario
+                if _dest == '0.0.0.0':
+                    logger.debug("Adding default gateway: {}".format(_dest))
+                    default_routes.append(_gw)
+                    # next line baby
+                    continue
+
+                if 'H' in _flags:
+                    # it's a host route
+                    _hr = (_dest, _mask, _gw)
+                    logger.debug("Adding host route: {}".format(_hr))
+                    host_routes.append(_hr)
+                    continue
+
+                # must be a network route
+                # TODO skip routes with mask of 0xff -- they're broadcast
+                _nr = (_dest, _mask, _gw)
+                logger.debug("Adding network route: {}".format(_nr))
+                network_routes.append(_nr)
+
+    # host and network routes have the form: (destination, netmask, gateway)
+    return host_routes, network_routes, default_routes
