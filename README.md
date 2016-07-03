@@ -7,18 +7,18 @@ Example:
 
  * Compromise host A
  * Dump the routing table, ARP table
- * Feed the dumps into this tool
+ * Feed the dumps into this tool by copy-pasting into text files
  * Pivot on host B
  * Dump tables
  * Feed tables
  * ...rinse, repeat
 
  * Ultimately, this tool produces a network diagram showing all hosts reachable
-   from A and B. Ideally with pretty icons
+   from A and B
 
-Result:
+Result (work in progress, but you get the idea):
 
-![Sample screenshot](/simplenetwork.png?raw=true "Simple Network Example")
+![Sample screenshot](simplenetwork.png?raw=true "Simple Network Example")
 
 
 Installation
@@ -34,11 +34,6 @@ To install:
  2. Install the required libraries:
 
     pip install -r requirements.txt
-
-
-Optional requirements:
-
- * Graphviz (see below for minimal instructions)
 
 
 Usage
