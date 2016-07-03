@@ -53,7 +53,7 @@ def extract_from_route(dumpfile, dumpfile_os, ip):
     if dumpfile_os == 'linux':
         if ip is None:
             raise MyException(
-                "Linux ARP does not contain the IP of the "
+                "Linux routing output does not contain the IP of the "
                 "centre node; please supply it manually\n")
         # host and network routes have the form: (destination, netmask, gateway)
         # default routes is an IP
@@ -64,13 +64,14 @@ def extract_from_route(dumpfile, dumpfile_os, ip):
 
     g = nx.Graph()
     # add current
-    g.add_node(ip, ip_addr=ip)
+    g.add_node(ip, ip_addr=ip, node_type="centre_node")
 
     for dr in default_route:
         # add the default route as direct neighbour to the graph, with
         # an edge leading to a 'default' network/internet.
         g.add_node(dr, ip_addr=dr, node_type="default_gateway")
         g.add_edge(ip, dr, link_type="default_route")
+
     for nr in network_routes:
         _network, _mask, _gw = nr
         # Then add all network routes as edges to other networks
@@ -84,10 +85,12 @@ def extract_from_route(dumpfile, dumpfile_os, ip):
         else:
             # or simply as a network route
             g.add_edge(ip, _network, link_type="network_route")
+
     for node in host_routes:
         # TODO
         # Lastly, add all host routes as edges *through* either a network route or
         # a default route. Not sure whether I'll have to parse IPs to understand this.
+        # perhaps using the ipaddr library?
         pass
 
     return g
