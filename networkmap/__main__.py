@@ -3,8 +3,8 @@
 POC of a network grapher
 ========================
 
-Does stuff.
-
+This tool parses various network 'dumps' such as traceroute, arp tables etc.
+and produces a growing network graph of all reachable nodes.
 
 """
 import argparse
@@ -21,6 +21,8 @@ from netgrapher import grow_graph
 from parsers import SUPPORTED_OS, SUPPORTED_DUMPFILES
 # from node import Node
 
+__author__ = "Lorenzo G. https://github.com/lorenzog"
+
 
 logger = logging.getLogger('netgrapher')
 
@@ -34,9 +36,6 @@ SUPPORTED_FILE_FORMATS = [
     'GRAPHML',
 ]
 DEFAULT_FILE_FORMAT = 'JSON'
-
-# TODO json format looks promising when interacting with d3:
-# http://bl.ocks.org/mbostock/4062045
 
 
 # see: http://stackoverflow.com/a/37578709/204634
@@ -118,7 +117,9 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('-d', '--debug', action='store_true')
 
-    # TODO this can be a list, for multiple interfaces. That makes it fun to implement..
+    # TODO this could be a list, for multiple interfaces. That makes it fun to
+    # implement unless we consider each interface to be a separate 'node', and
+    # join them with a stronger edge.
     p.add_argument(
         '-i', '--ip',
         help=("The IP address where the dumpfile was taken. "
@@ -153,7 +154,9 @@ def main():
         choices=SUPPORTED_OS)
 
     # run a http server?
-    p.add_argument('-H', '--serve_http', action='store_true')
+    p.add_argument(
+        '-H', '--serve_http', action='store_true',
+        help="Automatically run a minimal HTTP server locally to show the result")
     args = p.parse_args()
 
     if args.debug:
@@ -192,7 +195,8 @@ def main():
         logger.error("{}".format(e))
         raise SystemExit
 
-    # as a freebie, make a graph already if it's a dot file
+    # as a freebie, produce a graph with graphviz already if it's a dot file
+    # and if graphviz is installed
     if args.file_format == 'DOT':
         try:
             import pygraphviz as pgv
@@ -209,6 +213,8 @@ def main():
                 "still good. Try one of the graphviz programs manually "
                 "(e.g. neato, circo)")
 
+    logger.info("\nProcessing complete.\n")
+    # pretend we're a http server
     if args.serve_http:
         import SimpleHTTPServer
         import SocketServer

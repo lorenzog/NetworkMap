@@ -1,12 +1,3 @@
-#!/usr/bin/env python2.7
-"""
-POC of a network grapher
-========================
-
-Does stuff.
-
-
-"""
 # TODO add nmap support for host type
 # TODO add 'hosts' file for ip -> name support
 # NOTE: what about 'ghost' IPs or multicast/broadcast?
@@ -23,12 +14,6 @@ from errors import MyException
 logger = logging.getLogger('netgrapher')
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-DEFAULT_SAVEFILE = "networkmap.dot"
-DEFAULT_GRAPHIMG = "/tmp/out.png"
-
-# using networkx:
-# https://networkx.readthedocs.io/en/stable/reference/drawing.html#module-networkx.drawing.nx_agraph
 
 
 def extract_from_arp(dumpfile, dumpfile_os, ip):
