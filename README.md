@@ -20,7 +20,7 @@ Result (work in progress, but you get the idea):
 
 ![Sample screenshot](simplenetwork.png?raw=true "Simple Network Example")
 
-Please note that this is WORK IN PROGRESS and it needs some work to parse e.g. routing tables, etc. If you feel like helping, please take a look [here](https://github.com/xpn/NetworkMap/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+Please note that this is WORK IN PROGRESS and it needs some work to parse e.g. routing tables, etc. If you feel like helping, please take a look [here](https://github.com/lorenzog/NetworkMap/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 Installation
 ------------
